@@ -1,0 +1,166 @@
+<template>
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
+        <h3 class="text-xl font-bold text-gray-900">{{ cashbook ? 'Edit Cashbook' : 'Create Cashbook' }}</h3>
+        <button
+          @click="$emit('close')"
+          class="text-gray-400 hover:text-gray-600 transition-colors p-1"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form @submit.prevent="handleSubmit" class="p-6">
+        <div class="space-y-6">
+          <!-- Title -->
+          <div>
+            <label class="label-field">
+              Title <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="form.title"
+              type="text"
+              @blur="validateField('title')"
+              class="input-field"
+              :class="{ 'input-error': errors.title && touched.title }"
+              placeholder="Enter cashbook title"
+            />
+            <span v-if="errors.title && touched.title" class="error-message">{{ errors.title }}</span>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="label-field">Status</label>
+            <select
+              v-model="form.status"
+              class="input-field"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="pending">Pending</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="label-field">Description</label>
+            <textarea
+              v-model="form.description"
+              rows="4"
+              class="input-field resize-none"
+              placeholder="Enter cashbook description"
+            ></textarea>
+          </div>
+        </div>
+
+        <div v-if="error" class="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {{ error }}
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+          <button
+            type="button"
+            @click="$emit('close')"
+            class="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="loading" class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+            <span>{{ loading ? 'Saving...' : 'Save Cashbook' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue';
+import { useCashbookStore } from '../stores/cashbook';
+import { useValidation } from '../composables/useValidation';
+
+const props = defineProps({
+  cashbook: {
+    type: Object,
+    default: null,
+  },
+  businessId: {
+    type: [String, Number],
+    required: true,
+  },
+});
+
+const emit = defineEmits(['close', 'saved']);
+
+const cashbookStore = useCashbookStore();
+const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
+const loading = ref(false);
+const error = ref(null);
+
+const form = reactive({
+  business_id: props.businessId,
+  title: '',
+  description: '',
+  status: 'active',
+});
+
+const validationRules = {
+  title: ['required', 'min:2', 'max:255'],
+};
+
+onMounted(() => {
+  clearErrors();
+  if (props.cashbook) {
+    Object.assign(form, {
+      business_id: props.businessId,
+      title: props.cashbook.title || '',
+      description: props.cashbook.description || '',
+      status: props.cashbook.status || 'active',
+    });
+  }
+});
+
+const handleSubmit = async () => {
+  clearErrors();
+  error.value = null;
+
+  if (!validateForm(form, validationRules)) {
+    return;
+  }
+
+  loading.value = true;
+
+  try {
+    const formData = { ...form };
+    Object.keys(formData).forEach(key => {
+      if (formData[key] === '') {
+        formData[key] = null;
+      }
+    });
+
+    if (props.cashbook) {
+      await cashbookStore.updateCashbook(props.cashbook.id, formData);
+    } else {
+      await cashbookStore.createCashbook(formData);
+    }
+    emit('saved');
+  } catch (err) {
+    if (err.response?.data?.errors) {
+      setErrors(err.response.data.errors);
+    } else {
+      error.value = err.message || 'Failed to save cashbook';
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+</script>

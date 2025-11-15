@@ -37,13 +37,6 @@ class BusinessRolePermissionSeeder extends Seeder
                 'created_at' => $now,
                 'updated_at' => $now
             ],
-            [
-                'name' => 'customer',
-                'description' => 'External customer account (read-only per business policy)',
-                'status' => 'active',
-                'created_at' => $now,
-                'updated_at' => $now
-            ],
         ]);
 
         DB::table('business_permissions')->insert([
@@ -75,7 +68,6 @@ class BusinessRolePermissionSeeder extends Seeder
             'owner' => ['admin'],
             'partner' => ['data_operator'],
             'staff' => ['data_operator'],
-            'customer' => ['viewer'],
         ];
         foreach ($rolePermissions as $roleName => $permissions) {
             $roleId = DB::table('business_roles')->where('name', $roleName)->value('id');

@@ -23,29 +23,15 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+require __DIR__.'/auth.php';
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-require __DIR__.'/auth.php';
-
-Route::middleware('auth')->group(function () {
-    Route::resource('businesses', BusinessController::class);
-    Route::get('/businesses/export/{type}', [BusinessController::class, 'export'])->name('businesses.export');
-
-    Route::prefix('business')->group(function () {
-        Route::resource('members', MemberController::class);
-        Route::resource('cashbooks', CashbookController::class);
-
-        Route::prefix('cashbook')->group(function () {
-            Route::resource('cash-ins', CashInController::class);
-            Route::resource('cash-outs', CashOutController::class);
-        });
-    });
+    
+    // Vue SPA route - catch all authenticated routes (must be last)
+    Route::get('/{any}', function () {
+        return view('app');
+    })->where('any', '.*');
 });
