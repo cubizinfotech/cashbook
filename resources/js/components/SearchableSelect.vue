@@ -158,51 +158,68 @@ watch(() => props.options, () => {
   min-height: 42px;
 }
 
+/* Main field */
 .multiselect-custom .multiselect__tags {
   min-height: 42px;
   border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem; /* smoother corners */
   padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  background: #ffffff;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
+/* Focus */
 .multiselect-custom .multiselect__tags:focus-within {
   border-color: #0ea5e9;
-  ring: 1px;
-  ring-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.3);
 }
 
+/* Error */
 .multiselect-error .multiselect__tags {
   border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.2);
 }
 
+/* Placeholder */
 .multiselect-custom .multiselect__placeholder {
   color: #9ca3af;
   padding-top: 0;
   margin-bottom: 0;
+  font-size: 0.875rem;
 }
 
+/* Selected item */
 .multiselect-custom .multiselect__single {
   margin-bottom: 0;
   padding-top: 0;
+  font-size: 0.875rem;
+  color: #111827;
 }
 
-.multiselect-custom .multiselect__input,
-.multiselect-custom .multiselect__single {
+/* Input text inside select */
+.multiselect-custom .multiselect__input {
   font-size: 0.875rem;
   line-height: 1.5rem;
 }
 
+/* Dropdown icon */
 .multiselect-custom .multiselect__select {
   height: 40px;
-  right: 1px;
-  top: 1px;
+  right: 6px;
+  top: 2px;
+  transition: transform 0.2s;
 }
 
 .multiselect-custom .multiselect__select:before {
   border-color: #6b7280 transparent transparent;
-  border-width: 5px 5px 0;
-  top: 50%;
-  margin-top: -2.5px;
+  border-width: 6px 6px 0;
 }
+
+/* Rotate icon when open */
+.multiselect-custom.multiselect--active .multiselect__select:before {
+  transform: rotate(180deg);
+}
+
 </style>
 

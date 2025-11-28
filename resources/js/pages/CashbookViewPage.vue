@@ -76,6 +76,9 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Party</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
@@ -88,6 +91,28 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ transaction.party_name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
                       +{{ formatCurrency(transaction.amount) }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.category?.name || '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.payment_method?.name|| '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                    <div v-if="transaction.document_url">
+                        <a :href="transaction.document_url" target="_blank">
+                        <!-- Eye Preview Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="h-6 w-6 text-blue-600 hover:text-blue-800 cursor-pointer transition">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        </a>
+                    </div>
+
+                    <span v-else>-</span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.description || '-' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -137,6 +162,10 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Party</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
+
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
@@ -150,7 +179,30 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
                       -{{ formatCurrency(transaction.amount) }}
                     </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.category?.name || '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.payment_method?.name|| '-' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                    <div v-if="transaction.document_url">
+                        <a :href="transaction.document_url" target="_blank">
+                        <!-- Eye Preview Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="h-6 w-6 text-blue-600 hover:text-blue-800 cursor-pointer transition">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        </a>
+                    </div>
+
+                    <span v-else>-</span>
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ transaction.description || '-' }}</td>
+
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         @click="editTransaction(transaction, 'out')"
@@ -198,85 +250,237 @@
           </div>
 
           <form @submit.prevent="handleSubmit(currentFormType)" class="p-6">
-            <div class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Amount -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Amount *</label>
-                  <input
+                <label class="label-field">Amount <span class="text-red-500">*</span></label>
+                <input
                     v-model="form.amount"
                     type="number"
                     step="0.01"
                     min="0"
                     @blur="validateField('amount')"
                     :class="['input-field', { 'input-error': errors.amount && touched.amount }]"
-                  />
-                  <span v-if="errors.amount && touched.amount" class="error-message">{{ errors.amount }}</span>
+                />
+                <span v-if="errors.amount && touched.amount" class="error-message">{{ errors.amount }}</span>
                 </div>
-
+                <!-- Date & Time -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Party Name *</label>
-                  <input
+                <label class="label-field">Transaction Date</label>
+                <DateTimePicker
+                    v-model="form.transaction_datetime"
+                    :required="true"
+                    :error="errors.transaction_datetime && touched.transaction_datetime ? errors.transaction_datetime : ''"
+                    @blur="validateField('transaction_datetime')"
+                />
+                </div>
+                <!-- Party Name -->
+                <div>
+                <label class="label-field">Party Name <span class="text-red-500">*</span></label>
+                <input
                     v-model="form.party_name"
                     type="text"
                     @blur="validateField('party_name')"
                     :class="['input-field', { 'input-error': errors.party_name && touched.party_name }]"
-                  />
-                  <span v-if="errors.party_name && touched.party_name" class="error-message">{{ errors.party_name }}</span>
+                />
+                <span v-if="errors.party_name && touched.party_name" class="error-message">{{ errors.party_name }}</span>
                 </div>
 
+                <!-- Category -->
                 <div>
-                  <DateTimePicker
-                    v-model="form.transaction_datetime"
-                    label="Transaction Date"
-                    :required="true"
-                    :error="errors.transaction_datetime && touched.transaction_datetime ? errors.transaction_datetime : ''"
-                    @blur="validateField('transaction_datetime')"
-                  />
+                <label class="label-field">Category</label>
+                <SearchableSelect
+                    v-model="form.category_id"
+                    :options="categories"
+                    placeholder="Select Category"
+                    track-by="value"
+                    label-key="label"
+                />
+                <span v-if="errors.category_id && touched.category_id" class="error-message">
+                    {{ errors.category_id }}
+                </span>
+                </div>
+                <!-- Payment Method -->
+                <div class="md:col-span-2">
+                 <div class="flex items-center justify-between mb-1">
+                    <label class="label-field">Payment Method <span class="text-red-500">*</span></label>
+
+                   <button
+                    type="button"
+                    @click="handlePaymentMethodClick"
+
+                    class="text-sm px-2 py-1 bg-sky-600 text-white rounded hover:bg-sky-700"
+                    >
+                    {{ isEditingTransaction ? 'Edit Payment Method' : '+ Add Payment Method' }}
+
+                    </button>
+
+
+                </div>
+                <SearchableSelect
+                    v-model="form.payment_method_id"
+                    :options="paymentMethods"
+                    placeholder="Select Payment Method"
+                    track-by="value"
+                    label-key="label"
+                    />
+
+                    <span v-if="errors.payment_method_id && touched.payment_method_id" class="error-message">
+                    {{ errors.payment_method_id }}
+                    </span>
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    v-model="form.description"
-                    rows="3"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"
-                  ></textarea>
-                </div>
 
-                <div class="col-span-2">
-                  <label class="block text-sm font-medium text-gray-700">Remark</label>
-                  <textarea
+
+         <!-- Document Upload -->
+              <div class="md:col-span-2">
+
+                <FileUpload
+                    v-model="form.document"
+                    label="Document"
+                    accept="image/*,application/pdf"
+                    accept-text="Images or PDF up to 5MB"
+                    :existing-file="editingTransaction?.document_url"
+                    :error="errors.document && touched.document ? errors.document : ''"
+                />
+                </div>
+            <!-- Remark (FULL WIDTH) -->
+                <div class="md:col-span-2">
+                <label class="label-field">Remark</label>
+                <textarea
                     v-model="form.remark"
                     rows="3"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"
-                  ></textarea>
+                    class="input-field"
+                ></textarea>
                 </div>
-              </div>
+                <!-- Description (FULL WIDTH) -->
+                <div class="md:col-span-2">
+                <label class="label-field">Description</label>
+                <Ckeditor
+                    :editor="editor"
+                    :config="editorConfig"
+                    v-model="form.description"
+                />
+                </div>
 
-              <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {{ error }}
-              </div>
 
-              <div class="flex justify-end space-x-2 pt-4">
-                <button
-                  type="button"
-                  @click="closeModal"
-                  class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  :disabled="submitting"
-                  class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 disabled:opacity-50"
-                >
-                  {{ submitting ? 'Saving...' : 'Save' }}
-                </button>
-              </div>
+
             </div>
-          </form>
+
+            <!-- Error -->
+            <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 mt-4 rounded">
+                {{ error }}
+            </div>
+
+            <!-- Footer Buttons -->
+            <div class="flex justify-end gap-3 mt-6">
+                <button
+                type="button"
+                @click="closeModal"
+                class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100"
+                >
+                Cancel
+                </button>
+
+                <button
+                type="submit"
+                :disabled="submitting"
+                class="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 disabled:opacity-50"
+                >
+                {{ submitting ? 'Saving...' : 'Save' }}
+                </button>
+            </div>
+
+    </form>
         </div>
       </div>
+         <!-- PAYMENT METHOD POPUP -->
+                <div
+                v-if="showPaymentMethodPopup"
+                class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+                @click.self="closePaymentMethodPopup"
+                >
+                <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+
+                    <!-- HEADER -->
+                    <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        {{ paymentMethodEditing
+                            ? (currentFormType === 'in' ? 'Edit Cash In Payment Method' : 'Edit Cash Out Payment Method')
+                            : (currentFormType === 'in' ? 'Add Cash In Payment Method' : 'Add Cash Out Payment Method')
+                        }}
+
+                    </h3>
+
+                    <!-- Close Button -->
+                    <button
+                        @click="closePaymentMethodPopup"
+                        class="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                    </div>
+
+                    <!-- FORM -->
+                    <form @submit.prevent="saveNewPaymentMethod(currentFormType)" class="p-6">
+
+                    <!-- Name -->
+                    <div>
+                        <label class="label-field">Name <span class="text-red-500">*</span></label>
+                        <input
+                        v-model="paymentMethodForm.name"
+                        type="text"
+                        @blur="validateField('name')"
+                        :class="['input-field', { 'input-error': errors.name && touched.name }]"
+                    />
+
+                    <span v-if="errors.name && touched.name" class="error-message">
+                        {{ errors.name }}
+                    </span>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mt-6">
+                    <label class="label-field">Description</label>
+                    <textarea
+                        v-model="paymentMethodForm.description"
+                        rows="3"
+                        @blur="validateField('description')"
+                        class="input-field"
+                    ></textarea>
+                </div>
+
+
+                  <!-- Footer Buttons -->
+                 <div class="flex justify-end gap-3 mt-6">
+                    <button
+                    type="button"
+                    @click="closePaymentMethodPopup"
+                    class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100"
+                    >
+                    Cancel
+                    </button>
+
+                 <button
+                type="button"
+                @click="savePaymentMethod"
+                class="px-4 py-2 bg-green-600 text-white rounded"
+                >
+                {{ paymentMethodEditing ? 'Update' : 'Save' }}
+                </button>
+
+                </div>
+
+                    </form>
+
+                </div>
+                </div>
+
+
+
     </div>
   </div>
 </template>
@@ -288,13 +492,34 @@ import { useTransactionStore } from '../stores/transaction';
 import { useCashbookStore } from '../stores/cashbook';
 import { useValidation } from '../composables/useValidation';
 import DateTimePicker from '../components/DateTimePicker.vue';
+import SearchableSelect from '../components/SearchableSelect.vue';
+import { Ckeditor } from '@ckeditor/ckeditor5-vue';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import axios from 'axios';
+import FileUpload from '../components/FileUpload.vue';
 
+import { nextTick } from 'vue';
+const editor = ClassicEditor;
+const editorConfig = {
+  toolbar: ['heading', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+};
+
+// routing
 const route = useRoute();
 const router = useRouter();
 
+// stores
 const transactionStore = useTransactionStore();
 const cashbookStore = useCashbookStore();
+const documentFile = ref(null);
+
+const handleDocumentUpload = (e) => {
+  documentFile.value = e.target.files[0];
+};
+// validation
 const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
+
+// state
 const loading = ref(true);
 const submitting = ref(false);
 const error = ref(null);
@@ -302,9 +527,49 @@ const editingTransaction = ref(null);
 const transactions = ref([]);
 const cashbook = ref(null);
 const businessId = ref(null);
-const showModal = ref(false);
-const currentFormType = ref('in'); // Track which form is open
 
+const showModal = ref(false);
+const currentFormType = ref('in');
+
+// categories list
+const categories = ref([]);
+const paymentMethods = ref([]);
+// ⭐ Load categories dynamically
+const loadCategories = async () => {
+  try {
+    const res = await axios.get('/api/categories');
+
+    categories.value = res.data.map(cat => ({
+      label: cat.name,
+      value: cat.id,
+    }));
+  } catch (err) {
+    console.error("Error loading categories", err);
+  }
+};
+const loadPaymentMethods = async () => {
+  try {
+    const res = await axios.get('/api/payment-methods');
+
+    paymentMethods.value = res.data.map(pm => ({
+      label: pm.name,
+      value: pm.id,
+        description: pm.description,
+    }));
+  } catch (err) {
+    console.error("Error loading payment methods", err);
+  }
+};
+
+// status dropdown options
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'suspended', label: 'Suspended' },
+];
+
+// form state
 const form = reactive({
   cashbook_id: null,
   type: 'in',
@@ -314,16 +579,21 @@ const form = reactive({
   description: '',
   remark: '',
   status: 'active',
+  category_id: null,
 });
 
+// validation rules
 const validationRules = {
   cashbook_id: ['required'],
   type: ['required'],
   amount: ['required', 'numeric'],
   party_name: ['required', 'min:2', 'max:255'],
   transaction_datetime: ['required'],
+  payment_method_id: ['required'], // ✅ Added this
+
 };
 
+// computed
 const cashInTransactions = computed(() => {
   return transactions.value.filter(t => t.type === 'in');
 });
@@ -332,11 +602,16 @@ const cashOutTransactions = computed(() => {
   return transactions.value.filter(t => t.type === 'out');
 });
 
+// ⭐ Load everything on mount
 onMounted(async () => {
+  await loadCategories();
+  await loadPaymentMethods();  // <-- YOU FORGOT TO CALL THIS
   await loadCashbook();
   await loadTransactions();
 });
 
+
+// load cashbook
 const loadCashbook = async () => {
   try {
     loading.value = true;
@@ -346,12 +621,12 @@ const loadCashbook = async () => {
     form.cashbook_id = cashbookData.id;
   } catch (err) {
     error.value = err.response?.data?.message || 'Failed to load cashbook';
-    console.error('Failed to load cashbook', err);
   } finally {
     loading.value = false;
   }
 };
 
+// load transactions
 const loadTransactions = async () => {
   try {
     const response = await transactionStore.fetchTransactions({
@@ -363,22 +638,27 @@ const loadTransactions = async () => {
   }
 };
 
+// open form modal
 const openAddForm = (type) => {
   currentFormType.value = type;
   form.type = type;
   resetForm();
+  const last = getLastUsedPaymentMethod(type);
+  form.payment_method_id = last || null;
   showModal.value = true;
 };
 
+// close modal
 const closeModal = () => {
   showModal.value = false;
   resetForm();
 };
 
+// edit transaction
 const editTransaction = (transaction, type) => {
   editingTransaction.value = transaction;
   currentFormType.value = type;
-  form.type = transaction.type;
+    documentFile.value = null; // don't preload file input
   Object.assign(form, {
     cashbook_id: cashbook.value.id,
     type: transaction.type,
@@ -388,10 +668,16 @@ const editTransaction = (transaction, type) => {
     description: transaction.description || '',
     remark: transaction.remark || '',
     status: transaction.status || 'active',
+    category_id: transaction.category_id || null,
+    payment_method_id: transaction.payment_method_id || null,
+    document: transaction.document || null,
+
   });
+
   showModal.value = true;
 };
 
+// delete
 const confirmDeleteTransaction = async (transaction) => {
   if (confirm(`Are you sure you want to delete this transaction?`)) {
     try {
@@ -403,12 +689,14 @@ const confirmDeleteTransaction = async (transaction) => {
   }
 };
 
+// reset form
 const resetForm = () => {
   editingTransaction.value = null;
   clearErrors();
   error.value = null;
+
   Object.assign(form, {
-    cashbook_id: cashbook.value.id,
+    cashbook_id: cashbook.value?.id || null,
     type: currentFormType.value,
     amount: '',
     party_name: '',
@@ -416,14 +704,14 @@ const resetForm = () => {
     description: '',
     remark: '',
     status: 'active',
+    category_id: null,
   });
 };
 
+// submit
 const handleSubmit = async (type) => {
   clearErrors();
   error.value = null;
-
-  // Ensure type is set correctly
   form.type = type;
 
   if (!validateForm(form, validationRules)) {
@@ -433,18 +721,31 @@ const handleSubmit = async (type) => {
   submitting.value = true;
 
   try {
-    const formData = { ...form };
-    Object.keys(formData).forEach(key => {
-      if (formData[key] === '') {
-        formData[key] = null;
-      }
-    });
+    const formData = new FormData();
+
+    // append all normal fields
+    for (const key in form) {
+      formData.append(key, form[key] ?? '');
+    }
+
+    // append document file
+    if (documentFile.value) {
+      formData.append('document', documentFile.value);
+    }
 
     if (editingTransaction.value) {
-      await transactionStore.updateTransaction(editingTransaction.value.id, formData);
+      formData.append('_method', 'PUT');
+      await axios.post(
+        `/api/transactions/${editingTransaction.value.id}`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
     } else {
-      await transactionStore.createTransaction(formData);
+      await axios.post('/api/transactions', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     }
+
     resetForm();
     closeModal();
     await loadTransactions();
@@ -460,6 +761,7 @@ const handleSubmit = async (type) => {
 };
 
 
+// helpers
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString();
 };
@@ -470,4 +772,157 @@ const formatCurrency = (amount) => {
     currency: 'USD',
   }).format(amount);
 };
+
+const showPaymentMethodPopup = ref(false);
+const paymentMethodEditing = ref(false); // false = add, true = edit
+const isEditingTransaction = computed(() => editingTransaction.value !== null);
+const paymentMethodForm = reactive({
+  id: null,
+  name: '',
+  description: '',
+  case_id: ''
+});
+
+const paymentMethodRules = {
+  name: ['required', 'min:2', 'max:255'],
+  description: ['max:500']
+};
+const handlePaymentMethodClick = () => {
+  // If user is editing a transaction → edit payment method
+  if (isEditingTransaction.value) {
+    editPaymentMethod();
+    return;
+  }
+
+  // User is adding a new transaction
+  // Even if auto-filled payment method exists → treat as ADD
+  if (!paymentMethodEditing.value) {
+    openAddPaymentMethod();
+  } else {
+    editPaymentMethod();
+  }
+};
+
+
+const openAddPaymentMethod = () => {
+  paymentMethodEditing.value = false;
+  paymentMethodForm.id = null;
+  paymentMethodForm.name = '';
+  paymentMethodForm.description = '';
+  paymentMethodForm.case_id = '';
+  showPaymentMethodPopup.value = true;
+};
+
+
+const editPaymentMethod = () => {
+  const selected = paymentMethods.value.find(
+    pm => pm.value === form.payment_method_id
+  );
+    // currentFormType.value = type;
+  if (!selected) return;
+
+  paymentMethodEditing.value = true; // EDIT mode
+
+  paymentMethodForm.id = selected.value;
+  paymentMethodForm.name = selected.label;
+    paymentMethodForm.description = selected.description || '';
+  paymentMethodForm.case_id = selected.case_id || '';
+
+  showPaymentMethodPopup.value = true;
+};
+
+
+const closePaymentMethodPopup = () => {
+  showPaymentMethodPopup.value = false;
+  paymentMethodEditing.value = false;
+  paymentMethodForm.id = null;
+  paymentMethodForm.name = '';
+  paymentMethodForm.description = '';
+  paymentMethodForm.case_id = '';
+};
+
+
+const saveNewPaymentMethod = async () => {
+  clearErrors();
+
+  const isValid = validateForm(paymentMethodForm, paymentMethodRules);
+  if (!isValid) return;
+
+  try {
+    const res = await axios.post('/api/payment-methods', {
+      name: paymentMethodForm.name,
+      description: paymentMethodForm.description,
+      cash_id: businessId.value,
+    });
+
+    const created = res.data.data;
+
+    paymentMethods.value.unshift({
+      label: created.name,
+      value: created.id,
+      description: created.description,
+      case_id: created.case_id
+    });
+
+    form.payment_method_id = created.id;
+
+    closePaymentMethodPopup();
+  } catch (err) {
+    console.error("Save payment method error:", err);
+  }
+};
+
+
+const updatePaymentMethod = async () => {
+  clearErrors();
+
+  const isValid = validateForm(paymentMethodForm, paymentMethodRules);
+  if (!isValid) return;
+
+  try {
+    const res = await axios.put(`/api/payment-methods/${paymentMethodForm.id}`, {
+      name: paymentMethodForm.name,
+      description: paymentMethodForm.description,
+      case_id: paymentMethodForm.case_id,
+    });
+
+    const updated = res.data.data;
+
+    // Update list
+    paymentMethods.value = paymentMethods.value.map(pm =>
+      pm.value === updated.id
+        ? {
+            label: updated.name,
+            value: updated.id,
+            description: updated.description,
+            case_id: updated.case_id
+          }
+        : pm
+    );
+
+    // ⭐ Force dropdown refresh
+    form.payment_method_id = null;
+    await nextTick();
+    form.payment_method_id = updated.id;
+
+    closePaymentMethodPopup();
+  } catch (err) {
+    console.error("Update error:", err);
+  }
+};
+
+
+const savePaymentMethod = () => {
+  return paymentMethodEditing.value
+    ? updatePaymentMethod()
+    : saveNewPaymentMethod();
+};
+const getLastUsedPaymentMethod = (type) => {
+  const list = transactions.value
+    .filter(t => t.type === type && t.payment_method_id)
+    .sort((a, b) => new Date(b.transaction_datetime) - new Date(a.transaction_datetime));
+
+  return list.length ? list[0].payment_method_id : null;
+};
+
 </script>

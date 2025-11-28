@@ -27,7 +27,7 @@ class UpdateTransactionRequest extends FormRequest
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             'party_name' => 'required|string|max:255',
             'remark' => 'nullable|string',
-            'document' => 'nullable|string',
+            'document' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:5120',
             'amount' => 'required|numeric|min:0',
             'transaction_datetime' => 'required|date',
             'description' => 'nullable|string',

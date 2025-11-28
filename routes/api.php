@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\StateController;
 use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\PaymentMethodController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,4 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Business Roles
     Route::get('business-roles', [BusinessRoleController::class, 'index']);
+    Route::get('/categories', [CategoryController::class, 'index']);
+
+    Route::apiResource('payment-methods', PaymentmethodController::class);
 });

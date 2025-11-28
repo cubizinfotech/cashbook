@@ -48,6 +48,14 @@ export function useValidation() {
           errors[field] = 'Must be a number';
           return false;
         }
+      }else if (rule === 'not_future') {
+        const today = new Date().setHours(0, 0, 0, 0);
+        const inputDate = new Date(value).setHours(0, 0, 0, 0);
+
+        if (inputDate > today) {
+          errors[field] = 'Future date is not allowed';
+          return false;
+        }
       }
     }
 

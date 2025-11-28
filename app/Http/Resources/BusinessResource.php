@@ -17,7 +17,7 @@ class BusinessResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'description' => $this->description,
+            'description' => strip_tags($this->description),
             'gst_number' => $this->gst_number,
             'phone' => $this->phone,
             'email' => $this->email,

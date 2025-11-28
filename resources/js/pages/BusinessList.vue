@@ -70,9 +70,7 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="businessStore.error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-      {{ businessStore.error }}
-    </div>
+
 
     <!-- Businesses List -->
     <div v-else-if="businesses.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -18,7 +18,7 @@ class CashbookResource extends JsonResource
             'id' => $this->id,
             'business_id' => $this->business_id,
             'title' => $this->title,
-            'description' => $this->description,
+            'description' => strip_tags($this->description),
             'status' => $this->status,
             'business' => new BusinessResource($this->whenLoaded('business')),
             'transactions' => TransactionResource::collection($this->whenLoaded('entries')),

@@ -10,7 +10,7 @@ use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-
+use Illuminate\Support\Facades\Storage;
 class TransactionController extends Controller
 {
     /**
@@ -61,6 +61,10 @@ class TransactionController extends Controller
     {
         $data = $request->validated();
         $data['created_by'] = auth()->id();
+          // Handle logo upload
+        if ($request->hasFile('document')) {
+            $data['document'] = $request->file('document')->store('businesses/document', 'public');
+        }
 
         $transaction = Transaction::create($data);
         $transaction->load(['cashbook', 'category', 'paymentMethod']);
@@ -91,6 +95,16 @@ class TransactionController extends Controller
         $data = $request->validated();
         $data['updated_by'] = auth()->id();
 
+        // handle new document upload: store new file and delete old one if exists
+
+          if ($request->hasFile('document')) {
+            // Delete old logo
+            if ($transaction->document) {
+                Storage::disk('public')->delete($transaction->document);
+            }
+            $data['document'] = $request->file('document')->store('businesses/document', 'public');
+        }
+
         $transaction->update($data);
         $transaction->load(['cashbook', 'category', 'paymentMethod']);
 
@@ -104,12 +118,27 @@ class TransactionController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(Transaction $transaction): JsonResponse
-    {
-        $transaction->delete();
+{
+    // Delete file from storage if exists
+    if (!empty($transaction->document)) {
 
-        return response()->json([
-            'message' => 'Transaction deleted successfully',
-        ]);
+        // CASE 1 — DB stores full path like: "documents/abc.jpg"
+        if (Storage::disk('public')->exists($transaction->document)) {
+            Storage::disk('public')->delete($transaction->document);
+        }
+
+        // CASE 2 — DB stores only filename like: "abc.jpg"
+        if (Storage::disk('public')->exists('documents/' . $transaction->document)) {
+            Storage::disk('public')->delete('documents/' . $transaction->document);
+        }
     }
+
+    // Delete DB record
+    $transaction->delete();
+
+    return response()->json([
+        'message' => 'Transaction deleted successfully',
+    ]);
+}
 }
 

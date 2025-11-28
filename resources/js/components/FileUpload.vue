@@ -3,7 +3,7 @@
     <label class="label-field">
       {{ label }} <span v-if="required" class="text-red-500">*</span>
     </label>
-    
+
     <div
       @drop.prevent="handleDrop"
       @dragover.prevent="dragover = true"
@@ -21,7 +21,7 @@
         @change="handleFileSelect"
         class="hidden"
       />
-      
+
       <div v-if="!preview && !file">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -38,7 +38,7 @@
         </div>
         <p class="text-xs text-gray-500 mt-2">{{ acceptText }}</p>
       </div>
-      
+
       <div v-else class="space-y-4">
         <img v-if="preview" :src="preview" alt="Preview" class="mx-auto h-32 w-32 object-cover rounded-lg" />
         <div>
@@ -53,7 +53,7 @@
         </div>
       </div>
     </div>
-    
+
     <span v-if="error" class="error-message">{{ error }}</span>
   </div>
 </template>
@@ -86,6 +86,11 @@ const props = defineProps({
     type: String,
     default: '',
   },
+   // ⭐ MUST ADD THIS
+  existingFile: {
+    type: String,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -101,7 +106,16 @@ const handleFileSelect = (event) => {
     processFile(selectedFile);
   }
 };
-
+watch(
+  () => props.existingFile,
+  (newVal) => {
+    if (newVal) {
+      preview.value = newVal;
+      file.value = null;
+    }
+  },
+  { immediate: true }
+);
 const handleDrop = (event) => {
   dragover.value = false;
   const droppedFile = event.dataTransfer.files[0];
@@ -116,10 +130,10 @@ const processFile = (selectedFile) => {
     alert('File size must be less than 2MB');
     return;
   }
-  
+
   file.value = selectedFile;
   emit('update:modelValue', selectedFile);
-  
+
   // Create preview for images
   if (selectedFile.type.startsWith('image/')) {
     const reader = new FileReader();

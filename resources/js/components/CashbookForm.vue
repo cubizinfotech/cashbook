@@ -57,8 +57,14 @@
                     <!-- Description -->
                     <div>
                         <label class="label-field">Description</label>
-                        <textarea v-model="form.description" rows="4" class="input-field resize-none"
-                            placeholder="Enter cashbook description"></textarea>
+                        <Ckeditor
+                :editor="editor"
+                :config="editorConfig"
+
+                v-model="form.description"
+                @blur="validateField('description')"
+            />
+
                     </div>
                 </div>
 
@@ -89,7 +95,20 @@ import { useMemberStore } from '../stores/member';
 import { useValidation } from '../composables/useValidation';
 import SearchableSelect from './SearchableSelect.vue';
 
-
+import { Ckeditor } from '@ckeditor/ckeditor5-vue'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+const editor = ClassicEditor
+const editorConfig = {
+  toolbar: [
+    'heading',
+    'bold',
+    'italic',
+    'link',
+    'bulletedList',
+    'numberedList',
+    'blockQuote'
+  ],
+};
 const props = defineProps({
     cashbook: {
         type: Object,
@@ -143,9 +162,13 @@ onMounted(async () => {
 
     // Fetch members for the business
     await fetchBusinessMembers();
+    console.log("MEMBERS RAW FROM API:", membersRaw.value);
 
     if (props.cashbook) {
+                console.log("CASHBOOK MEMBERS FROM PROPS:", props.cashbook);
+
         Object.assign(form, {
+
             business_id: props.businessId,
             title: props.cashbook.title || '',
             description: props.cashbook.description || '',

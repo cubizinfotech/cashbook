@@ -1,3 +1,4 @@
+
 <template>
   <div class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
     <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -151,14 +152,15 @@
           <!-- Description (Last) -->
           <div class="md:col-span-2">
             <label class="label-field">Description</label>
-            <textarea
-              v-model="form.description"
-              rows="4"
-              @blur="validateField('description')"
-              class="input-field resize-none"
-              :class="{ 'input-error': errors.description && touched.description }"
-              placeholder="Enter business description"
-            ></textarea>
+            <Ckeditor
+            :editor="editor"
+            :config="editorConfig"
+
+            v-model="form.description"
+            @blur="validateField('description')"
+            class="ck-editor-height"
+            />
+
             <span v-if="errors.description && touched.description" class="error-message">{{ errors.description }}</span>
           </div>
         </div>
@@ -188,7 +190,14 @@
     </div>
   </div>
 </template>
-
+<style>
+.ck-blurred.ck.ck-content.ck-editor__editable.ck-rounded-corners.ck-editor__editable_inline {
+    height: 150px;
+}
+.ck-focused.ck.ck-content.ck-editor__editable.ck-rounded-corners.ck-editor__editable_inline {
+    height: 150px;
+}
+</style>
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import { useBusinessStore } from '../stores/business';
@@ -196,7 +205,20 @@ import { useValidation } from '../composables/useValidation';
 import LocationSelect from './LocationSelect.vue';
 import FileUpload from './FileUpload.vue';
 import SearchableSelect from './SearchableSelect.vue';
-
+import { Ckeditor } from '@ckeditor/ckeditor5-vue'
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+const editor = ClassicEditor
+const editorConfig = {
+  toolbar: [
+    'heading',
+    'bold',
+    'italic',
+    'link',
+    'bulletedList',
+    'numberedList',
+    'blockQuote'
+  ],
+};
 const props = defineProps({
   business: {
     type: Object,
@@ -268,7 +290,7 @@ onMounted(() => {
       description: props.business.description || '',
       logo: props.business.logo || null,
     });
-    
+
     // Set location values - ensure they're numbers or null
     location.country_id = props.business.country_id ? Number(props.business.country_id) : null;
     location.state_id = props.business.state_id ? Number(props.business.state_id) : null;
@@ -280,7 +302,7 @@ const updateLocation = (newLocation) => {
   location.country_id = newLocation.country_id;
   location.state_id = newLocation.state_id;
   location.city_id = newLocation.city_id;
-  
+
   // Also update form for consistency
   form.country_id = newLocation.country_id !== null ? newLocation.country_id : '';
   form.state_id = newLocation.state_id !== null ? newLocation.state_id : '';
@@ -312,7 +334,7 @@ const handleSubmit = async () => {
 
   try {
     const formData = new FormData();
-    
+
     // Debug: Log location values before processing
     console.log('Location values before processing:', {
       country_id: location.country_id,
@@ -324,7 +346,7 @@ const handleSubmit = async () => {
         city_id: typeof location.city_id,
       }
     });
-    
+
     // First, ensure location values are properly set from the location reactive object
     // Read directly from location to get the most current values
     const getLocationId = (value) => {
@@ -335,13 +357,13 @@ const handleSubmit = async () => {
       const numValue = typeof value === 'string' ? parseInt(value, 10) : Number(value);
       return !isNaN(numValue) && numValue > 0 ? numValue : null;
     };
-    
+
     const countryId = getLocationId(location.country_id);
     const stateId = getLocationId(location.state_id);
     const cityId = getLocationId(location.city_id);
-    
+
     console.log('Processed location IDs:', { countryId, stateId, cityId });
-    
+
     // Append all form fields
     Object.keys(form).forEach(key => {
       if (key !== 'logo' && !['country_id', 'state_id', 'city_id'].includes(key)) {
@@ -351,7 +373,7 @@ const handleSubmit = async () => {
         }
       }
     });
-    
+
     // Explicitly append location fields as strings (FormData converts to string anyway)
     if (countryId !== null) {
       formData.append('country_id', String(countryId));
@@ -365,14 +387,14 @@ const handleSubmit = async () => {
       formData.append('city_id', String(cityId));
       console.log('Appended city_id:', String(cityId));
     }
-    
+
     // Debug: Verify FormData contents
     console.log('FormData location values:', {
       country_id: formData.get('country_id'),
       state_id: formData.get('state_id'),
       city_id: formData.get('city_id')
     });
-    
+
     // Handle file upload
     if (form.logo instanceof File) {
       formData.append('logo', form.logo);
@@ -385,11 +407,18 @@ const handleSubmit = async () => {
     }
     emit('saved');
   } catch (err) {
-    if (err.response?.data?.errors) {
-      setErrors(err.response.data.errors);
-    } else {
-      error.value = err.message || 'Failed to save business';
-    }
+    console.log("FULL ERROR OBJECT:", err);
+  console.log("ERROR RESPONSE:", err.phone);
+  console.log("ERROR DATA:", err.response?.data);
+  console.log("ERROR ERRORS:", err.response?.data?.errors);
+ if (err.phone || err.email) {
+    Object.keys(err).forEach((key) => {
+      errors[key] = err[key][0]; // convert array → string
+      touched[key] = true;
+    });
+    return;
+  }
+
   } finally {
     loading.value = false;
   }

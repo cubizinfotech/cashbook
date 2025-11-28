@@ -9,6 +9,7 @@
         :required="required"
         :error="errors.country_id && touched.country_id ? errors.country_id : ''"
         placeholder="Select Country"
+        :preselect-first="false"
         :disabled="loadingCountries"
         track-by="id"
         label-key="name"
