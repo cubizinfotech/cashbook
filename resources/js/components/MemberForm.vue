@@ -82,7 +82,7 @@
           <div>
             <SearchableSelect
             v-model="form.business_role_id"
-            :options="roles"
+            :options="filteredRoles"
             label="Role"
             :required="true"
             placeholder="Select Role"
@@ -101,8 +101,7 @@
               placeholder="Select date of birth"
               @blur="validateField('date_of_birth')"
             />
-        <span v-if="errors.date_of_birth && touched.date_of_birth" class="error-message">{{ errors.date_of_birth }}</span>
-
+            <span v-if="errors.date_of_birth && touched.date_of_birth" class="error-message">{{ errors.date_of_birth }}</span>
           </div>
 
           <!-- Gender -->
@@ -166,20 +165,8 @@
             <span v-if="errors.zip_code && touched.zip_code" class="error-message">{{ errors.zip_code }}</span>
           </div>
 
-          <!-- Status -->
-          <div>
-            <SearchableSelect
-              v-model="form.status"
-              :options="statusOptions"
-              label="Status"
-              placeholder="Select Status"
-              track-by="value"
-              label-key="label"
-            />
-          </div>
-
           <!-- Description -->
-          <div class="md:col-span-2">
+          <div class="">
             <label class="label-field">Description</label>
 
             <Ckeditor
@@ -219,7 +206,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch,computed } from 'vue';
 import { useMemberStore } from '../stores/member';
 import { useValidation } from '../composables/useValidation';
 import LocationSelect from './LocationSelect.vue';
@@ -229,7 +216,8 @@ import SearchableSelect from './SearchableSelect.vue';
 import axios from 'axios';
 import { Ckeditor } from '@ckeditor/ckeditor5-vue';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
-
+import { useBusinessStore } from '../stores/business';
+const businessStore = useBusinessStore();
 const editor = ClassicEditor;
 const editorConfig = {
   toolbar: [
@@ -242,9 +230,6 @@ const editorConfig = {
     'blockQuote'
   ],
 };
-
-
-
 const props = defineProps({
   member: {
     type: Object,
@@ -255,9 +240,15 @@ const props = defineProps({
     required: true,
   },
 });
+onMounted(async () => {
+  await memberStore.fetchMembers();
+});
+const businessMember = computed(() => {
+  return memberStore.members.find((m) => m.business_id == props.businessId
+  ) || null;
+});
 
 const emit = defineEmits(['close', 'saved']);
-
 const memberStore = useMemberStore();
 const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
 const loading = ref(false);
@@ -273,13 +264,6 @@ const genderOptions = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
   { value: 'other', label: 'Other' },
-];
-
-const statusOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'suspended', label: 'Suspended' },
 ];
 
 const form = reactive({
@@ -309,17 +293,42 @@ const validationRules = {
   date_of_birth: ['date', 'not_future'], // <-- add this
 
 };
+const filteredRoles = computed(() => {
+  const all = Array.isArray(roles.value) ? roles.value : [];
+  const currentRoleId = form.business_role_id ? Number(form.business_role_id) : null;
+  let result = [];
+  if (currentRoleId === 1) {
+    result = all.slice();
+  } else if (currentRoleId === 2 || currentRoleId === 3) {
+    result = all.filter(r => Number(r.id) === 3);
+  } else {
+    result = all.slice();
+  }
+  const editingRoleId = props.member ? Number(props.member.business_role_id) : null;
+  if (editingRoleId && !result.some(r => Number(r.id) === editingRoleId)) {
+    const editingRole = all.find(r => Number(r.id) === editingRoleId);
+    if (editingRole) {
+      result = [...result, editingRole];
+    }
+  }
+  return result;
+});
 
 onMounted(async () => {
   clearErrors();
   await loadRoles();
-
+  await memberStore.fetchMembers();
+    if (props.member) {
+        form.business_role_id = props.member.business_role_id;
+    }else if (businessMember.value) {
+        form.business_role_id = businessMember.value.business_role_id;
+    }
   if (props.member) {
     Object.assign(form, {
       business_id: props.businessId,
       business_role_id: props.member.business_role_id || '',
       name: props.member.name || '',
-      email: props.member.email || '',
+      email: getUserEmail(props.member.user_id),   // <-- FIXED
       phone: props.member.phone || '',
       date_of_birth: props.member.date_of_birth || '',
       gender: props.member.gender || '',
@@ -329,7 +338,6 @@ onMounted(async () => {
       status: props.member.status || 'active',
       profile_pic: props.member.profile_pic || null,
     });
-
     location.country_id = props.member.country_id;
     location.state_id = props.member.state_id;
     location.city_id = props.member.city_id;
@@ -339,8 +347,6 @@ const updateLocation = (newLocation) => {
   location.country_id = newLocation.country_id;
   location.state_id = newLocation.state_id;
   location.city_id = newLocation.city_id;
-
-  // Also update form for consistency
   form.country_id = newLocation.country_id !== null ? newLocation.country_id : '';
   form.state_id = newLocation.state_id !== null ? newLocation.state_id : '';
   form.city_id = newLocation.city_id !== null ? newLocation.city_id : '';
@@ -359,7 +365,15 @@ const loadRoles = async () => {
     console.error('Failed to load roles', error);
   }
 };
-
+const user = ref(null);
+onMounted(async () => {
+  try {
+    const response = await axios.get('/api/user');
+    user.value = response.data;
+  } catch (error) {
+    console.error('Failed to fetch user', error);
+  }
+});
 watch(location, (newVal) => {
   form.country_id = newVal.country_id;
   form.state_id = newVal.state_id;
@@ -369,18 +383,13 @@ watch(location, (newVal) => {
 const handleSubmit = async () => {
   clearErrors();
   error.value = null;
-
-  // Sync location values to form before validation (ensure latest values)
-  // Read directly from location reactive object to get the most current values
   form.country_id = location.country_id !== null && location.country_id !== '' ? location.country_id : '';
   form.state_id = location.state_id !== null && location.state_id !== '' ? location.state_id : '';
   form.city_id = location.city_id !== null && location.city_id !== '' ? location.city_id : '';
   if (!validateForm(form, validationRules)) {
     return;
   }
-
   loading.value = true;
-
   try {
     const formData = new FormData();
     console.log('Location values before processing:', {
@@ -404,11 +413,9 @@ const handleSubmit = async () => {
       const numValue = typeof value === 'string' ? parseInt(value, 10) : Number(value);
       return !isNaN(numValue) && numValue > 0 ? numValue : null;
     };
-
     const countryId = getLocationId(location.country_id);
     const stateId = getLocationId(location.state_id);
     const cityId = getLocationId(location.city_id);
-
     console.log('Processed location IDs:', { countryId, stateId, cityId });
 
     // Append all form fields
@@ -474,4 +481,10 @@ const handleSubmit = async () => {
     loading.value = false;
   }
 };
+const getUserEmail = (userId) => {
+  const users = businessStore.currentBusiness?.users || [];
+  const u = users.find(x => x.id === userId);
+  return u ? u.email : '';
+};
+
 </script>

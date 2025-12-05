@@ -18,6 +18,8 @@ class StoreMemberRequest extends FormRequest
         $businessId = $this->input('business_id');
 
         return [
+
+
             'business_id'     => 'required|exists:businesses,id',
             'business_role_id'=> 'required|exists:business_roles,id',
             'name'            => 'required|string|max:255',
@@ -28,12 +30,8 @@ class StoreMemberRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('members', 'email')->where(function ($query) use ($businessId) {
-                    return $query->where('business_id', $businessId);
-                }),
-                // keep user-level uniqueness if you need globally unique users:
-                // Rule::unique('users', 'email'),
             ],
+
             // Validate phone unique *within the same business*
             'phone' => [
                 'nullable',

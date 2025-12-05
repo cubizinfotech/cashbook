@@ -23,6 +23,21 @@ export const useMemberStore = defineStore('member', {
         this.loading = false;
       }
     },
+    async fetchMember(id) {
+    this.loading = true;
+    this.error = null;
+
+    try {
+        const response = await axios.get(`/api/members/${id}`);
+        console.log("📌 Single member loaded:", response.data.data);
+        return response.data.data;    // return one member
+    } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to fetch member';
+        throw error;
+    } finally {
+        this.loading = false;
+    }
+    },
 
     async createMember(data) {
       this.loading = true;

@@ -17,6 +17,7 @@ class BusinessResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+
             'description' => strip_tags($this->description),
             'gst_number' => $this->gst_number,
             'phone' => $this->phone,
@@ -33,9 +34,13 @@ class BusinessResource extends JsonResource
             'state' => $this->whenLoaded('state'),
             'city' => $this->whenLoaded('city'),
             'members' => MemberResource::collection($this->whenLoaded('members')),
+            'users' => UserResource::collection($this->whenLoaded('users')),
+
             'cashbooks' => CashbookResource::collection($this->whenLoaded('cashbooks')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'is_current_user' => auth()->user()->email === $this->email
+
         ];
     }
 }

@@ -26,9 +26,9 @@ class UpdateMemberRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('members', 'email')
-                    ->where('business_id', $this->business_id)
-                    ->ignore($memberId),
+                // Rule::unique('members', 'email')
+                //     ->where('business_id', $this->business_id)
+                //     ->ignore($memberId),
             ],
             // PHONE: unique per business + ignore current record
             'phone' => [

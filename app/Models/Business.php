@@ -13,6 +13,7 @@ class Business extends Model
      protected $table = 'businesses';
 
     protected $fillable = [
+        'member_role_id',
         'name',
         'description',
         'gst_number',
@@ -41,7 +42,7 @@ class Business extends Model
     public function country() {
         return $this->belongsTo(Country::class);
     }
-    
+
     public function state() {
         return $this->belongsTo(State::class);
     }
@@ -57,7 +58,7 @@ class Business extends Model
     public function updater() {
         return $this->belongsTo(User::class, 'updated_by');
     }
-    
+
     public function members() {
         return $this->hasMany(Member::class);
     }
@@ -65,4 +66,16 @@ class Business extends Model
     public function cashbooks() {
         return $this->hasMany(Cashbook::class);
     }
+    public function users()
+    {
+        return $this->hasManyThrough(
+        User::class,
+        Member::class,
+        'business_id', // Member table column that references businesses.id
+        'id',          // User table primary key
+        'id',          // Business table primary key
+        'user_id'      // Member table column that references users
+        );
+    }
+
 }

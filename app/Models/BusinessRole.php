@@ -35,4 +35,8 @@ class BusinessRole extends Model
     public function updater() {
         return $this->belongsTo(User::class, 'created_by');
     }
+    public function role()
+    {
+        return $this->belongsTo(BusinessRole::class, 'business_role_id');
+    }
 }

@@ -3,38 +3,42 @@
 namespace App\Mail;
 
 use App\Models\Member;
-use Illuminate\Bus\Queueable;
+use App\Models\User;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Bus\Queueable;
 
 class MemberRegistrationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $member;
+   public $member;
     public $password;
+    public $isNewUser;
+    public $user; // ADD THIS
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(Member $member, string $password)
+    public function __construct(Member $member, ?string $password, bool $isNewUser, User $user)
     {
         $this->member = $member;
         $this->password = $password;
+        $this->isNewUser = $isNewUser;
+        $this->user = $user; // SAVE USER
     }
 
-    /**
-     * Build the message.
-     */
     public function build()
     {
-        return $this->subject('Welcome to ' . $this->member->business->name)
-            ->view('emails.member-registration')
-            ->with([
-                'member' => $this->member,
-                'password' => $this->password,
-                'loginUrl' => url('/login'),
-            ]);
+        return $this->subject(
+            $this->isNewUser
+                ? ('Welcome to ' . $this->member->business->name)
+                : ('Access Granted to ' . $this->member->business->name)
+        )
+        ->view('emails.member-registration')
+        ->with([
+            'member' => $this->member,
+            'password' => $this->password,
+            'isNewUser' => $this->isNewUser,
+            'loginUrl' => url('/login'),
+            'user' => $this->user, // SEND USER TO VIEW
+        ]);
     }
 }
-

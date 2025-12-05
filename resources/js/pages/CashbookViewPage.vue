@@ -304,18 +304,13 @@
                 <div class="md:col-span-2">
                  <div class="flex items-center justify-between mb-1">
                     <label class="label-field">Payment Method <span class="text-red-500">*</span></label>
-
                    <button
                     type="button"
                     @click="handlePaymentMethodClick"
-
                     class="text-sm px-2 py-1 bg-sky-600 text-white rounded hover:bg-sky-700"
                     >
                     {{ isEditingTransaction ? 'Edit Payment Method' : '+ Add Payment Method' }}
-
                     </button>
-
-
                 </div>
                 <SearchableSelect
                     v-model="form.payment_method_id"
@@ -324,54 +319,45 @@
                     track-by="value"
                     label-key="label"
                     />
-
                     <span v-if="errors.payment_method_id && touched.payment_method_id" class="error-message">
                     {{ errors.payment_method_id }}
                     </span>
                 </div>
-
-
-
-         <!-- Document Upload -->
-              <div class="md:col-span-2">
-
-                <FileUpload
-                    v-model="form.document"
-                    label="Document"
-                    accept="image/*,application/pdf"
-                    accept-text="Images or PDF up to 5MB"
-                    :existing-file="editingTransaction?.document_url"
-                    :error="errors.document && touched.document ? errors.document : ''"
-                />
-                </div>
-            <!-- Remark (FULL WIDTH) -->
+             <!-- Document Upload -->
                 <div class="md:col-span-2">
-                <label class="label-field">Remark</label>
-                <textarea
-                    v-model="form.remark"
-                    rows="3"
-                    class="input-field"
-                ></textarea>
+
+                    <FileUpload
+                        v-model="form.document"
+                        label="Document"
+                        accept="image/*,application/pdf"
+                        accept-text="Images or PDF up to 5MB"
+                        :existing-file="editingTransaction?.document_url"
+                        :error="errors.document && touched.document ? errors.document : ''"
+                    />
+                    </div>
+                <!-- Remark (FULL WIDTH) -->
+                    <div class="md:col-span-2">
+                    <label class="label-field">Remark</label>
+                    <textarea
+                        v-model="form.remark"
+                        rows="3"
+                        class="input-field"
+                    ></textarea>
+                    </div>
+                    <!-- Description (FULL WIDTH) -->
+                    <div class="md:col-span-2">
+                    <label class="label-field">Description</label>
+                    <Ckeditor
+                        :editor="editor"
+                        :config="editorConfig"
+                        v-model="form.description"
+                    />
+                    </div>
                 </div>
-                <!-- Description (FULL WIDTH) -->
-                <div class="md:col-span-2">
-                <label class="label-field">Description</label>
-                <Ckeditor
-                    :editor="editor"
-                    :config="editorConfig"
-                    v-model="form.description"
-                />
+                <!-- Error -->
+                <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 mt-4 rounded">
+                    {{ error }}
                 </div>
-
-
-
-            </div>
-
-            <!-- Error -->
-            <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 mt-4 rounded">
-                {{ error }}
-            </div>
-
             <!-- Footer Buttons -->
             <div class="flex justify-end gap-3 mt-6">
                 <button
@@ -395,13 +381,11 @@
         </div>
       </div>
          <!-- PAYMENT METHOD POPUP -->
-                <div
-                v-if="showPaymentMethodPopup"
+            <div v-if="showPaymentMethodPopup"
                 class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
                 @click.self="closePaymentMethodPopup"
                 >
                 <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-
                     <!-- HEADER -->
                     <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-10">
                     <h3 class="text-xl font-bold text-gray-900">
@@ -409,9 +393,7 @@
                             ? (currentFormType === 'in' ? 'Edit Cash In Payment Method' : 'Edit Cash Out Payment Method')
                             : (currentFormType === 'in' ? 'Add Cash In Payment Method' : 'Add Cash Out Payment Method')
                         }}
-
                     </h3>
-
                     <!-- Close Button -->
                     <button
                         @click="closePaymentMethodPopup"
@@ -423,64 +405,53 @@
                         </svg>
                     </button>
                     </div>
-
                     <!-- FORM -->
                     <form @submit.prevent="saveNewPaymentMethod(currentFormType)" class="p-6">
+                        <!-- Name -->
+                        <div>
+                            <label class="label-field">Name <span class="text-red-500">*</span></label>
+                            <input
+                            v-model="paymentMethodForm.name"
+                            type="text"
+                            @blur="validateField('name')"
+                            :class="['input-field', { 'input-error': errors.name && touched.name }]"
+                        />
 
-                    <!-- Name -->
-                    <div>
-                        <label class="label-field">Name <span class="text-red-500">*</span></label>
-                        <input
-                        v-model="paymentMethodForm.name"
-                        type="text"
-                        @blur="validateField('name')"
-                        :class="['input-field', { 'input-error': errors.name && touched.name }]"
-                    />
+                        <span v-if="errors.name && touched.name" class="error-message">
+                            {{ errors.name }}
+                        </span>
+                        </div>
+                        <!-- Description -->
+                        <div class="mt-6">
+                            <label class="label-field">Description</label>
+                            <textarea
+                                v-model="paymentMethodForm.description"
+                                rows="3"
+                                @blur="validateField('description')"
+                                class="input-field"
+                            ></textarea>
+                        </div>
+                        <!-- Footer Buttons -->
+                        <div class="flex justify-end gap-3 mt-6">
+                                <button
+                                    type="button"
+                                    @click="closePaymentMethodPopup"
+                                    class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100"
+                                    >
+                                    Cancel
+                                </button>
 
-                    <span v-if="errors.name && touched.name" class="error-message">
-                        {{ errors.name }}
-                    </span>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="mt-6">
-                    <label class="label-field">Description</label>
-                    <textarea
-                        v-model="paymentMethodForm.description"
-                        rows="3"
-                        @blur="validateField('description')"
-                        class="input-field"
-                    ></textarea>
-                </div>
-
-
-                  <!-- Footer Buttons -->
-                 <div class="flex justify-end gap-3 mt-6">
-                    <button
-                    type="button"
-                    @click="closePaymentMethodPopup"
-                    class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100"
-                    >
-                    Cancel
-                    </button>
-
-                 <button
-                type="button"
-                @click="savePaymentMethod"
-                class="px-4 py-2 bg-green-600 text-white rounded"
-                >
-                {{ paymentMethodEditing ? 'Update' : 'Save' }}
-                </button>
-
-                </div>
-
+                                <button
+                                    type="button"
+                                    @click="savePaymentMethod"
+                                    class="px-4 py-2 bg-green-600 text-white rounded"
+                                    >
+                                    {{ paymentMethodEditing ? 'Update' : 'Save' }}
+                                </button>
+                        </div>
                     </form>
-
                 </div>
-                </div>
-
-
-
+            </div>
     </div>
   </div>
 </template>

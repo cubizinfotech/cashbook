@@ -62,33 +62,41 @@
     <div class="header">
         <h1>Welcome to {{ $member->business->name }}!</h1>
     </div>
-    
+   @if ($isNewUser)
     <div class="content">
         <p>Hello {{ $member->name }},</p>
-        
+
         <p>Your account has been created successfully. You can now access the Cash Book management system.</p>
-        
+
         <div class="credentials">
             <h3 style="margin-top: 0; color: #111827;">Your Login Credentials:</h3>
             <div class="credentials-item">
-                <span class="credentials-label">Email:</span> {{ $member->email }}
+                <span class="credentials-label">Email:</span> {{ $user->email }}
             </div>
             <div class="credentials-item">
                 <span class="credentials-label">Password:</span> {{ $password }}
             </div>
         </div>
-        
+
         <p><strong>Important:</strong> Please change your password after your first login for security purposes.</p>
-        
+
         <div style="text-align: center;">
             <a href="{{ $loginUrl }}" class="button">Login to Your Account</a>
         </div>
-        
+
         <p style="margin-top: 30px;">If you have any questions, please contact your administrator.</p>
-        
+
         <p>Best regards,<br>{{ $member->business->name }} Team</p>
     </div>
-    
+ @else
+        {{-- EXISTING USER MESSAGE --}}
+        <p>You already have an account in our system.</p>
+
+        <p>You have now been granted access to a new business:</p>
+        <h3>{{ $member->business->name }}</h3>
+
+        <p>You can log in using your existing email and password.</p>
+    @endif
     <div class="footer">
         <p>This is an automated email. Please do not reply to this message.</p>
         <p>&copy; {{ date('Y') }} {{ $member->business->name }}. All rights reserved.</p>

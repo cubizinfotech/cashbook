@@ -25,24 +25,11 @@
                             placeholder="Enter cashbook title" />
                         <span v-if="errors.title && touched.title" class="error-message">{{ errors.title }}</span>
                     </div>
-
-                    <!-- Status -->
-                    <div>
-                        <SearchableSelect
-                            v-model="form.status"
-                            :options="statusOptions"
-                            label="Status"
-                            placeholder="Select Status"
-                            track-by="value"
-                            label-key="label"
-                        />
-                    </div>
-
                     <!-- Members -->
                     <div>
                         <SearchableSelect
                             v-model="form.member_ids"
-                            :options="members"
+                             :options="filteredMembers"
                             label="Members"
                             :multiple="true"
                             :disabled="membersLoading"
@@ -53,21 +40,18 @@
                         />
                     </div>
 
-
                     <!-- Description -->
                     <div>
                         <label class="label-field">Description</label>
                         <Ckeditor
-                :editor="editor"
-                :config="editorConfig"
+                            :editor="editor"
+                            :config="editorConfig"
 
-                v-model="form.description"
-                @blur="validateField('description')"
-            />
-
+                            v-model="form.description"
+                            @blur="validateField('description')"
+                        />
                     </div>
                 </div>
-
                 <div v-if="error" class="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     {{ error }}
                 </div>
@@ -94,7 +78,6 @@ import { useCashbookStore } from '../stores/cashbook';
 import { useMemberStore } from '../stores/member';
 import { useValidation } from '../composables/useValidation';
 import SearchableSelect from './SearchableSelect.vue';
-
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 const editor = ClassicEditor
@@ -134,16 +117,26 @@ const membersRaw = ref([]);
 const members = computed(() => {
   return membersRaw.value.map(member => ({
     ...member,
-    name: `${member.name} (${member.email})`
+    name: `${member.name} `
   }));
 });
+const filteredMembers = computed(() => {
+    if (!user.value) return members.value;
+    if (user.value?.member?.role?.id === 3) {
+        return members.value.filter(m => m.id === user.value.member.id);
+    }
+    return members.value;
+});
 
-const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'suspended', label: 'Suspended' },
-];
+const user = ref(null);
+onMounted(async () => {
+  try {
+    const response = await axios.get('/api/user');
+    user.value = response.data;
+  } catch (error) {
+    console.error('Failed to fetch user', error);
+  }
+});
 
 const form = reactive({
     business_id: props.businessId,
@@ -159,16 +152,11 @@ const validationRules = {
 
 onMounted(async () => {
     clearErrors();
-
     // Fetch members for the business
     await fetchBusinessMembers();
     console.log("MEMBERS RAW FROM API:", membersRaw.value);
-
     if (props.cashbook) {
-                console.log("CASHBOOK MEMBERS FROM PROPS:", props.cashbook);
-
         Object.assign(form, {
-
             business_id: props.businessId,
             title: props.cashbook.title || '',
             description: props.cashbook.description || '',
@@ -197,13 +185,10 @@ const fetchBusinessMembers = async () => {
 const handleSubmit = async () => {
     clearErrors();
     error.value = null;
-
     if (!validateForm(form, validationRules)) {
         return;
     }
-
     loading.value = true;
-
     try {
         const formData = { ...form };
         Object.keys(formData).forEach(key => {
@@ -214,7 +199,6 @@ const handleSubmit = async () => {
 
         // Ensure member_ids is an array
         if (!Array.isArray(formData.member_ids)) {
-            // formData.member_ids = formData.member_ids ? [formData.member_ids] : [];
             formData.member_ids = form.member_ids.map(m => m.id);
         }
 

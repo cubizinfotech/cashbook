@@ -52,35 +52,51 @@ class MemberController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreMemberRequest $request): JsonResponse
-{
-     $data = $request->validated();
+    {
+        $data = $request->validated();
         $data['created_by'] = auth()->id();
-
         // Handle profile picture upload
         if ($request->hasFile('profile_pic')) {
             $data['profile_pic'] = $request->file('profile_pic')->store('members/profile-pics', 'public');
         }
-
         // Create user account
         $password = $data['password'] ?? 'password';
-
-        User::firstOrCreate(
-            ['email' => $data['email']],
-            [
+        $user = User::where('email', $data['email'])->first();
+        $newUser = false;
+        if (!$user) {
+        // First time email -> create user
+        $newUser = true;
+            $user = User::create([
                 'name' => $data['name'],
+                'email' => $data['email'],
                 'password' => Hash::make($password),
                 'email_verified_at' => now(),
-                'created_by' => $data['created_by'],
+                'created_by' => auth()->id(),
             ]);
+        }
+        $exists = Member::where('user_id', $user->id)
+            ->where('business_id', $data['business_id'])
+            ->first();
 
-        // Create member
+        if ($exists) {
+            return response()->json([
+                'message' => 'This user is already added to this business.',
+                'errors'  => [
+                    'email' => ['This email already exists in this business.']
+                ]
+            ], 422);
+        }
+        $data['email'] = $request->email;
         unset($data['password']);
+        $data['user_id'] = $user->id;
         $member = Member::create($data);
         $member->load(['business', 'role', 'country', 'state', 'city']);
-
         // Send registration email
         try {
-            Mail::to($member->email)->send(new MemberRegistrationMail($member, $password));
+            Mail::to($user->email)->send(
+                new MemberRegistrationMail($member, $password, $newUser, $user)
+            );
+
         } catch (\Exception $e) {
             Log::error('Failed to send member registration email: ' . $e->getMessage());
         }
@@ -89,47 +105,7 @@ class MemberController extends Controller
             'message' => 'Member created successfully',
             'data' => new MemberResource($member),
         ], 201);
-}
-
-    // public function store(Request  $request): JsonResponse
-    // {
-    //      echo'<pre>';print_r("test by gopal");'</pre>';exit;
-    //     $data = $request->validated();
-    //     $data['created_by'] = auth()->id();
-
-    //     // Handle profile picture upload
-    //     if ($request->hasFile('profile_pic')) {
-    //         $data['profile_pic'] = $request->file('profile_pic')->store('members/profile-pics', 'public');
-    //     }
-
-    //     // Create user account
-    //     $password = $data['password'] ?? 'password';
-    //     // echo'<pre>';print_r($data);'</pre>';die;
-    //     $user = User::create([
-    //         'name' => $data['name'],
-    //         'email' => $data['email'],
-    //         'password' => Hash::make($password),
-    //         'email_verified_at' => now(),
-    //         'created_by' => $data['created_by'],
-    //     ]);
-
-    //     // Create member
-    //     unset($data['password']);
-    //     $member = Member::create($data);
-    //     $member->load(['business', 'role', 'country', 'state', 'city']);
-
-    //     // Send registration email
-    //     try {
-    //         Mail::to($member->email)->send(new MemberRegistrationMail($member, $password));
-    //     } catch (\Exception $e) {
-    //         Log::error('Failed to send member registration email: ' . $e->getMessage());
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'Member created successfully',
-    //         'data' => new MemberResource($member),
-    //     ], 201);
-    // }
+    }
 
     /**
      * Display the specified resource.
@@ -150,7 +126,6 @@ class MemberController extends Controller
     {
         $data = $request->validated();
         $data['updated_by'] = auth()->id();
-
         // Handle profile picture upload
         if ($request->hasFile('profile_pic')) {
             // Delete old profile picture
@@ -159,30 +134,31 @@ class MemberController extends Controller
             }
             $data['profile_pic'] = $request->file('profile_pic')->store('members/profile-pics', 'public');
         }
-
-        // Update user password if provided
-        // if (isset($data['password'])) {
-        //     $user = User::where('email', $member->email)->first();
-        //     if ($user) {
-        //         $user->update(['password' => Hash::make($data['password'])]);
-        //     }
-        //     unset($data['password']);
-        // }
-        $user = User::where('email', $member->email)->first();
-
-        if ($user) {
-
-            // Update non-password fields ALWAYS
-            $user->update($data);
-
-            // Update password ONLY if provided
-            if (!empty($data['password'])) {
-                $user->update([
-                    'password' => Hash::make($data['password']),
-                ]);
-            }
+        // Create user account
+        $password = $data['password'] ?? 'password';
+         $user = User::firstOrCreate(
+            ['email' => $data['email']],
+            [
+                'name' => $data['name'],
+                'password' => Hash::make($password),
+                'email_verified_at' => now(),
+                'updated_by' => $data['updated_by'],
+            ]);
+          $exists = Member::where('user_id', $user->id)
+            ->where('business_id', $data['business_id'])
+            ->where('id', '!=', $member->id) // exclude current member
+            ->first();
+        if ($exists) {
+            return response()->json([
+                'message' => 'This user is already added to this business.',
+                'errors'  => [
+                    'email' => ['This email already exists in this business.']
+                ]
+            ], 422);
         }
+        unset($data['email']);
         unset($data['password']);
+        $data['user_id'] = $user->id;
         $member->update($data);
         $member->load(['business', 'role', 'country', 'state', 'city']);
 

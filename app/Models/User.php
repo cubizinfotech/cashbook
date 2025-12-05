@@ -61,8 +61,11 @@ class User extends Authenticatable
     ];
 
     // Relations
-    public function businesses()
-    {
+    public function member() {
+        return $this->hasOne(Member::class);
+    }
+
+    public function businesses() {
         return $this->hasMany(Business::class, 'created_by');
     }
 

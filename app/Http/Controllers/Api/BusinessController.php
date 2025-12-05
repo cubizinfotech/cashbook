@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Business;
+use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -15,12 +16,14 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BusinessController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Business::with(['country', 'state', 'city', 'members', 'cashbooks']);
+        $authId = auth()->id();
+
+        $query = Business::where('created_by', $authId)
+            ->orWhereHas('members', function ($q) use ($authId) {
+                $q->where('user_id', $authId);
+            });
 
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->status);
@@ -31,9 +34,9 @@ class BusinessController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
-        }
+                ->orWhere('phone', 'like', "%{$search}%");
+        });
+    }
 
         $businesses = $query->latest()->paginate($request->get('per_page', 15));
 
@@ -45,6 +48,10 @@ class BusinessController extends Controller
      */
     public function store(StoreBusinessRequest $request): JsonResponse
     {
+        $user = auth()->user();
+
+        $member = Member::where('email', $user->email)->first();
+
         // Debug: Log all request data
         Log::info('Business Store Request Data:', [
             'all' => $request->all(),
@@ -59,7 +66,6 @@ class BusinessController extends Controller
         Log::info('Business Store Validated Data:', $data);
 
         $data['created_by'] = auth()->id();
-
         // Handle logo upload
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('businesses/logos', 'public');
@@ -88,9 +94,9 @@ class BusinessController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Business $business): JsonResponse
+    public function show(Business $business)
     {
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks']);
+        $business->load(['country', 'state', 'city', 'members', 'cashbooks','users']);
 
         return response()->json([
             'data' => new BusinessResource($business),

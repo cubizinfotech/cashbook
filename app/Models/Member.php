@@ -13,12 +13,12 @@ class Member extends Model
      protected $table = 'members';
 
     protected $fillable = [
+        'user_id',
         'business_id',
         'business_role_id',
         'name',
         'date_of_birth',
         'gender',
-        'email',
         'phone',
         'profile_pic',
         'description',
@@ -41,6 +41,10 @@ class Member extends Model
     ];
 
     // Relations
+    public function user() {
+        return $this->belongsTo(User::class);
+    }
+
     public function business() {
         return $this->belongsTo(Business::class);
     }
@@ -69,7 +73,4 @@ class Member extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function user() {
-        return $this->hasOne(User::class, 'email', 'email');
-    }
 }

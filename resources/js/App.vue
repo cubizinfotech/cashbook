@@ -20,7 +20,7 @@
           </svg>
         </button>
       </div>
-      
+
       <nav class="mt-6 px-3">
         <router-link
           to="/dashboard"
@@ -34,7 +34,7 @@
           </svg>
           Dashboard
         </router-link>
-        
+
         <router-link
           to="/businesses"
           :class="[
@@ -62,13 +62,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        
+
         <div class="flex-1"></div>
-        
+
         <div class="flex items-center space-x-4">
-          <div class="text-sm text-gray-700 font-medium hidden sm:block">
-            {{ user?.name || 'User' }}
-          </div>
+      <div class="text-sm text-gray-700 font-medium hidden sm:block">
+          {{ user?.user?.name || 'User' }}
+          <span class="text-gray-500 ml-1">
+            <!-- ({{ user?.member?.role?.name || 'admin' }}) -->
+          </span>
+        </div>
+
+
           <form method="POST" action="/logout" class="inline">
             <input type="hidden" name="_token" :value="csrfToken" />
             <button

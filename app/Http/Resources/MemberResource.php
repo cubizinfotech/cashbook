@@ -18,6 +18,7 @@ class MemberResource extends JsonResource
             'id' => $this->id,
             'business_id' => $this->business_id,
             'business_role_id' => $this->business_role_id,
+            'user_id' =>$this->user_id,
             'name' => $this->name,
             'date_of_birth' => $this->date_of_birth,
             'gender' => $this->gender,
@@ -33,6 +34,7 @@ class MemberResource extends JsonResource
             'status' => $this->status,
             'business' => new BusinessResource($this->whenLoaded('business')),
             'role' => $this->whenLoaded('role'),
+            'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

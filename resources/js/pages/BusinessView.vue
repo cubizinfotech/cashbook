@@ -21,9 +21,9 @@
       {{ businessStore.error }}
     </div>
 
-    <div v-else-if="business" class="space-y-6">
+    <div v-else-if="business" class="space-y-6" >
       <!-- Business Header -->
-      <div class="card p-6">
+      <div class="card p-6" >
         <div class="flex justify-between items-start">
           <div class="flex-1">
             <div class="flex items-center space-x-3 mb-4">
@@ -35,8 +35,7 @@
                   'bg-yellow-100 text-yellow-800': business.status === 'pending',
                   'bg-gray-100 text-gray-800': business.status === 'suspended'
                 }"
-                class="px-3 py-1 text-sm font-medium rounded-full"
-              >
+                class="px-3 py-1 text-sm font-medium rounded-full">
                 {{ business.status }}
               </span>
             </div>
@@ -66,15 +65,14 @@
           </div>
         </div>
       </div>
-
       <!-- Members Section -->
-      <div class="card">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <div v-for="member in business.members" :key="member.id"class="card" >
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center" v-if="member.business_role_id === 1  || member.business_role_id === 2">
           <h2 class="text-lg font-semibold text-gray-900">Members</h2>
+
           <button
             @click="showMemberForm = true"
-            class="btn-primary text-sm"
-          >
+            class="btn-primary text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -82,22 +80,24 @@
           </button>
         </div>
 
-        <div v-if="business.members && business.members.length > 0" class="divide-y divide-gray-200">
-          <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
-            <div class="flex justify-between items-center">
+        <div v-if="business.members && business.members.length > 0 " class="divide-y divide-gray-200">
+          <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors" v-if="member.business_role_id === 1  || member.business_role_id === 2">
+            <div class="flex justify-between items-center" >
               <div class="flex-1">
-                <p class="font-medium text-gray-900">{{ member.name }}</p>
-                <p class="text-sm text-gray-500 mt-1">{{ member.email }}</p>
+                <p class="font-medium text-gray-900">{{ member.name }}( {{ getRoleName(member.business_role_id) }})</p>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ getUserEmailForMember(member) }}
+                </p>
                 <p v-if="member.phone" class="text-sm text-gray-500">{{ member.phone }}</p>
               </div>
               <div class="flex space-x-3">
-                <button
+                <button v-if="!user?.member?.role?.name ||member.business_role_id === 1  || member.business_role_id === 2"
                   @click="editMember(member)"
                   class="text-sky-600 hover:text-sky-800 text-sm font-medium transition-colors"
                 >
                   Edit
                 </button>
-                <button
+                <button v-if="!user?.member?.role?.name ||member.business_role_id === 1"
                   @click="confirmDeleteMember(member)"
                   class="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
@@ -150,12 +150,16 @@
                 >
                   Edit
                 </button>
+              <template v-for="member in business.members" :key="member.id">
                 <button
-                  @click="confirmDeleteCashbook(cashbook)"
-                  class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    v-if="member.business_role_id === 1 || member.business_role_id === 2"
+                    @click="confirmDeleteCashbook(cashbook)"
+                    class="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
-                  Delete
+                    Delete
                 </button>
+                </template>
+
               </div>
             </div>
           </div>
@@ -204,28 +208,46 @@ const props = defineProps({
     required: true,
   },
 });
-
+const roles = ref([]);
+const loadRoles = async () => {
+  try {
+    const response = await axios.get('/api/business-roles');
+    roles.value = response.data.data || [];
+  } catch (error) {
+    console.error('Failed to load roles', error);
+  }
+};
 const router = useRouter();
 const businessStore = useBusinessStore();
 const memberStore = useMemberStore();
 const cashbookStore = useCashbookStore();
-
 const showMemberForm = ref(false);
 const showCashbookForm = ref(false);
 const editingMember = ref(null);
 const editingCashbook = ref(null);
-
 const business = computed(() => businessStore.currentBusiness);
-
 onMounted(async () => {
+    console.log('id'.id);
   await businessStore.fetchBusiness(props.id);
 });
-
 const editMember = (member) => {
   editingMember.value = member;
   showMemberForm.value = true;
 };
 
+const user = ref(null);
+onMounted(async () => {
+  try {
+    const response = await axios.get('/api/user');
+    user.value = response.data;
+    console.log(response.data);
+
+      await loadRoles(); // <-- LOAD ROLES HERE
+
+  } catch (error) {
+    console.error('Failed to fetch user', error);
+  }
+});
 const confirmDeleteMember = async (member) => {
   if (confirm(`Are you sure you want to delete "${member.name}"? This action cannot be undone.`)) {
     try {
@@ -236,16 +258,14 @@ const confirmDeleteMember = async (member) => {
     }
   }
 };
-
+// console.log("Role ID:", roles);
 const viewCashbook = (cashbook) => {
   router.push(`/cashbooks/${cashbook.id}`);
 };
-
 const editCashbook = (cashbook) => {
   editingCashbook.value = cashbook;
   showCashbookForm.value = true;
 };
-
 const confirmDeleteCashbook = async (cashbook) => {
   if (confirm(`Are you sure you want to delete "${cashbook.title}"? This action cannot be undone.`)) {
     try {
@@ -256,7 +276,6 @@ const confirmDeleteCashbook = async (cashbook) => {
     }
   }
 };
-
 const closeMemberForm = () => {
   showMemberForm.value = false;
   editingMember.value = null;
@@ -276,4 +295,15 @@ const handleCashbookSaved = async () => {
   closeCashbookForm();
   await businessStore.fetchBusiness(props.id);
 };
+const getRoleName = (roleId) => {
+  const role = roles.value.find(r => r.id === roleId);
+  return role ? role.name : "Unknown";
+};
+const getUserEmailForMember = (member) => {
+  const users = businessStore.currentBusiness?.users || [];
+  const matchedUser = users.find(u => u.id === member.user_id);
+  return matchedUser ? matchedUser.email : "No email";
+};
+
+
 </script>

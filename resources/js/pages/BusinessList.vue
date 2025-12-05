@@ -50,16 +50,6 @@
             class="input-field"
           />
         </div>
-        <div class="md:w-48">
-          <SearchableSelect
-            v-model="statusFilter"
-            :options="statusOptions"
-            placeholder="All Status"
-            track-by="value"
-            label-key="label"
-            @update:model-value="handleFilter"
-          />
-        </div>
       </div>
     </div>
 
@@ -79,6 +69,9 @@
         :key="business.id"
         class="card hover:shadow-md transition-shadow"
       >
+       <!-- {{ memberStore }}
+
+       {{ roles }} -->
         <div class="p-6">
           <div class="flex items-start justify-between mb-4">
             <div class="flex-1 min-w-0">
@@ -86,10 +79,13 @@
                 :to="`/businesses/${business.id}`"
                 class="text-xl font-semibold text-gray-900 hover:text-sky-600 transition-colors block truncate"
               >
-                {{ business.name }}
+
+                {{ business.name }}<span class="text-sm font-semibold ">({{ getBusinessRole(business.id) }})</span>
               </router-link>
               <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ business.description || 'No description' }}</p>
             </div>
+
+
             <span
               :class="{
                 'bg-emerald-100 text-emerald-800': business.status === 'active',
@@ -177,28 +173,48 @@
 import { ref, computed, onMounted } from 'vue';
 import { useBusinessStore } from '../stores/business';
 import BusinessForm from '../components/BusinessForm.vue';
-import SearchableSelect from '../components/SearchableSelect.vue';
-
+import { useMemberStore } from '../stores/member';
+const memberStore = useMemberStore();
+const roles = ref([]);
 const businessStore = useBusinessStore();
 const showForm = ref(false);
 const editingBusiness = ref(null);
 const searchQuery = ref('');
 const statusFilter = ref('');
 let searchTimeout = null;
-
-const statusOptions = [
-  { value: '', label: 'All Status' },
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'suspended', label: 'Suspended' },
-];
+const loadRoles = async () => {
+  try {
+    const response = await axios.get('/api/business-roles');
+    roles.value = response.data.data || [];
+    console.log("Loaded roles:", roles.value);
+  } catch (error) {
+    console.error('Failed to load roles', error);
+  }
+};
 
 const businesses = computed(() => businessStore.businesses);
+console.log(businesses);
 
 onMounted(async () => {
   await businessStore.fetchBusinesses();
 });
+onMounted(async () => {
+    await memberStore.fetchMembers();
+    await loadRoles();
+});
+
+const getBusinessRole = (businessId) => {
+  // Find the member for this business
+  const member = memberStore.members.find(
+    m => Number(m.business_id) === Number(businessId)
+  );
+  if (!member) return "No role";
+  // Find the role in roles list
+  const role = roles.value.find(
+    r => Number(r.id) === Number(member.business_role_id)
+  );
+  return role ? role.name : "Unknown role";
+};
 
 const handleSearch = () => {
   clearTimeout(searchTimeout);
@@ -208,13 +224,6 @@ const handleSearch = () => {
       status: statusFilter.value,
     });
   }, 500);
-};
-
-const handleFilter = async () => {
-  await businessStore.fetchBusinesses({
-    search: searchQuery.value,
-    status: statusFilter.value,
-  });
 };
 
 const editBusiness = (business) => {

@@ -18,7 +18,9 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
+Route::get('/.well-known/appspecific/com.chrome.devtools.json', function () {
+    return response()->json(['status' => 'ok']);
+});
 Route::get('/', function () {
     return view('welcome');
 });
@@ -35,3 +37,4 @@ Route::middleware('auth')->group(function () {
         return view('app');
     })->where('any', '.*');
 });
+

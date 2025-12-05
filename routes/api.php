@@ -24,9 +24,24 @@ use App\Http\Controllers\Api\PaymentMethodController;
 |
 */
 
+// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+    $user = $request->user();
+
+    // Find member record by email or user_id
+    $member = \App\Models\Member::with('role')
+        ->where('user_id', $user->id)
+        ->first();
+
+    return [
+        'user' => $user,
+        'member' => $member
+    ];
 });
+
 
 Route::middleware('auth:sanctum')->group(function () {
     // Businesses
@@ -52,3 +67,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('payment-methods', PaymentmethodController::class);
 });
+

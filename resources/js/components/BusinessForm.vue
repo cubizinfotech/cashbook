@@ -34,7 +34,7 @@
 
           <!-- Email -->
           <div>
-            <label class="label-field">Email Address</label>
+            <label class="label-field">Email Address <span class="text-red-500">*</span></label>
             <input
               v-model="form.email"
               type="email"
@@ -137,30 +137,16 @@
             <span v-if="errors.zip_code && touched.zip_code" class="error-message">{{ errors.zip_code }}</span>
           </div>
 
-          <!-- Status -->
-          <div>
-            <SearchableSelect
-              v-model="form.status"
-              :options="statusOptions"
-              label="Status"
-              placeholder="Select Status"
-              track-by="value"
-              label-key="label"
-            />
-          </div>
-
           <!-- Description (Last) -->
-          <div class="md:col-span-2">
+          <div class="">
             <label class="label-field">Description</label>
             <Ckeditor
             :editor="editor"
             :config="editorConfig"
-
             v-model="form.description"
             @blur="validateField('description')"
             class="ck-editor-height"
             />
-
             <span v-if="errors.description && touched.description" class="error-message">{{ errors.description }}</span>
           </div>
         </div>
@@ -227,7 +213,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'saved']);
-
 const businessStore = useBusinessStore();
 const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
 const loading = ref(false);
