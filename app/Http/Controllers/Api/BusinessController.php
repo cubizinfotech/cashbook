@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Business;
-use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Resources\BusinessResource;
@@ -16,14 +14,19 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BusinessController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $authId = auth()->id();
+        $userId = auth()->id();
+        $perPage = $request->get('per_page', 1);
 
-        $query = Business::where('created_by', $authId)
-            ->orWhereHas('members', function ($q) use ($authId) {
-                $q->where('user_id', $authId);
-            });
+        $query = Business::with(['country', 'state', 'city','members', 'cashbooks', 'creator']);
+
+        $query->where('created_by', $userId)->orWhereHas('members', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        });
 
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->status);
@@ -34,11 +37,15 @@ class BusinessController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%");
-        });
-    }
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('gst_number', 'like', "%{$search}%")
+                    ->orWhere('website', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
 
-        $businesses = $query->latest()->paginate($request->get('per_page', 15));
+        $businesses = $query->latest()->paginate($perPage);
 
         return BusinessResource::collection($businesses);
     }
@@ -48,24 +55,8 @@ class BusinessController extends Controller
      */
     public function store(StoreBusinessRequest $request): JsonResponse
     {
-        $user = auth()->user();
-
-        $member = Member::where('email', $user->email)->first();
-
-        // Debug: Log all request data
-        Log::info('Business Store Request Data:', [
-            'all' => $request->all(),
-            'country_id' => $request->input('country_id'),
-            'state_id' => $request->input('state_id'),
-            'city_id' => $request->input('city_id'),
-        ]);
-
         $data = $request->validated();
 
-        // Debug: Log validated data
-        Log::info('Business Store Validated Data:', $data);
-
-        $data['created_by'] = auth()->id();
         // Handle logo upload
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('businesses/logos', 'public');
@@ -82,8 +73,10 @@ class BusinessController extends Controller
             $data['city_id'] = !empty($data['city_id']) ? (int)$data['city_id'] : null;
         }
 
+        $data['created_by'] = auth()->id();
+
         $business = Business::create($data);
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks']);
+        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'creator']);
 
         return response()->json([
             'message' => 'Business created successfully',
@@ -94,13 +87,11 @@ class BusinessController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Business $business)
+    public function show(Business $business): BusinessResource
     {
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks','users']);
+        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'cashbooks.members', 'creator']);
 
-        return response()->json([
-            'data' => new BusinessResource($business),
-        ]);
+        return new BusinessResource($business);
     }
 
     /**
@@ -108,20 +99,7 @@ class BusinessController extends Controller
      */
     public function update(UpdateBusinessRequest $request, Business $business): JsonResponse
     {
-        // Debug: Log all request data
-        Log::info('Business Update Request Data:', [
-            'all' => $request->all(),
-            'country_id' => $request->input('country_id'),
-            'state_id' => $request->input('state_id'),
-            'city_id' => $request->input('city_id'),
-        ]);
-
         $data = $request->validated();
-
-        // Debug: Log validated data
-        Log::info('Business Update Validated Data:', $data);
-
-        $data['updated_by'] = auth()->id();
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
@@ -143,8 +121,10 @@ class BusinessController extends Controller
             $data['city_id'] = !empty($data['city_id']) ? (int)$data['city_id'] : null;
         }
 
+        $data['updated_by'] = auth()->id();
+
         $business->update($data);
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks']);
+        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'creator']);
 
         return response()->json([
             'message' => 'Business updated successfully',
@@ -164,4 +144,3 @@ class BusinessController extends Controller
         ]);
     }
 }
-

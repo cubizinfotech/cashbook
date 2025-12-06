@@ -18,10 +18,26 @@ class CashbookController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Cashbook::with(['business', 'entries', 'members']);
+        $userId = auth()->id();
+        $perPage = $request->get('per_page', 15);
+
+        $query = Cashbook::with(['business', 'entries', 'members', 'creator']);
+
+        $query->where('created_by', $userId)->orWhereHas('business', function ($q) use ($userId) {
+            $q->where('created_by', $userId)
+                ->orWhereHas('members', function ($q2) use ($userId) {
+                    $q2->where('user_id', $userId)->orWhere('created_by', $userId);
+                });
+        });
 
         if ($request->has('business_id')) {
             $query->where('business_id', $request->business_id);
+        }
+
+        if ($request->has('member_id')) {
+            $query->whereHas('members', function ($q) use ($request) {
+                $q->where('id', $request->member_id);
+            });
         }
 
         if ($request->has('status')) {
@@ -36,7 +52,7 @@ class CashbookController extends Controller
             });
         }
 
-        $cashbooks = $query->latest()->paginate($request->get('per_page', 15));
+        $cashbooks = $query->latest()->paginate($perPage);
 
         return CashbookResource::collection($cashbooks);
     }
@@ -47,10 +63,10 @@ class CashbookController extends Controller
     public function store(StoreCashbookRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['created_by'] = auth()->id();
 
-        $memberIds = $data['member_ids'] ?? [];
         unset($data['member_ids']);
+        $data['created_by'] = auth()->id();
+        $memberIds = $data['member_ids'] ?? [];
 
         $cashbook = Cashbook::create($data);
 
@@ -59,7 +75,7 @@ class CashbookController extends Controller
             $cashbook->members()->sync($memberIds);
         }
 
-        $cashbook->load(['business', 'entries', 'members']);
+        $cashbook->load(['business', 'members', 'creator']);
 
         return response()->json([
             'message' => 'Cashbook created successfully',
@@ -70,13 +86,11 @@ class CashbookController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Cashbook $cashbook): JsonResponse
+    public function show(Cashbook $cashbook): CashbookResource
     {
-        $cashbook->load(['business', 'entries.category', 'entries.paymentMethod', 'members']);
+        $cashbook->load(['business', 'members', 'entries', 'entries.category', 'entries.paymentMethod', 'creator']);
 
-        return response()->json([
-            'data' => new CashbookResource($cashbook),
-        ]);
+        return  new CashbookResource($cashbook);
     }
 
     /**
@@ -85,19 +99,19 @@ class CashbookController extends Controller
     public function update(UpdateCashbookRequest $request, Cashbook $cashbook): JsonResponse
     {
         $data = $request->validated();
-        $data['updated_by'] = auth()->id();
 
-        $memberIds = $data['member_ids'] ?? null;
         unset($data['member_ids']);
+        $data['updated_by'] = auth()->id();
+        $memberIds = $data['member_ids'] ?? null;
 
         $cashbook->update($data);
 
         // Sync members if provided
-        if ($memberIds !== null) {
+        if ($memberIds != null) {
             $cashbook->members()->sync($memberIds);
         }
 
-        $cashbook->load(['business', 'entries', 'members']);
+        $cashbook->load(['business', 'members', 'entries', 'creator']);
 
         return response()->json([
             'message' => 'Cashbook updated successfully',

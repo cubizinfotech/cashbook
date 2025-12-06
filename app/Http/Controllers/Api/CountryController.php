@@ -2,25 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Country;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\CountryResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CountryController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(): AnonymousResourceCollection
     {
-        $query = Country::where('status', 'active');
+        $countries = Country::where('status', 'active')->orderBy('name')->get();
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        $countries = $query->orderBy('name')->get();
-
-        return response()->json(['data' => $countries]);
+        return CountryResource::collection($countries);
     }
 }
-

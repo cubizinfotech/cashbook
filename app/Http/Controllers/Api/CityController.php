@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\City;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\CityResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CityController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
         $query = City::where('status', 'active');
 
@@ -17,14 +21,8 @@ class CityController extends Controller
             $query->where('state_id', $request->state_id);
         }
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
-        }
-
         $cities = $query->orderBy('name')->get();
 
-        return response()->json(['data' => $cities]);
+        return CityResource::collection($cities);
     }
 }
-

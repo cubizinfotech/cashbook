@@ -22,11 +22,10 @@ class StoreCashbookRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'business_id' => 'required|exists:businesses,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'nullable|in:active,inactive,pending,suspended',
-            'member_ids' => 'nullable|array',
+            'business_id'  => 'required|exists:businesses,id',
+            'title'        => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'member_ids'   => 'nullable|array',
             'member_ids.*' => 'exists:members,id',
         ];
     }

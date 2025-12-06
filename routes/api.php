@@ -32,7 +32,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     $user = $request->user();
 
     // Find member record by email or user_id
-    $member = \App\Models\Member::with('role')
+    $member = \App\Models\Member::with('businessRole')
         ->where('user_id', $user->id)
         ->first();
 

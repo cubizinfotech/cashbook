@@ -66,8 +66,8 @@
         </div>
       </div>
       <!-- Members Section -->
-      <div v-for="member in business.members" :key="member.id"class="card" >
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center" v-if="member.business_role_id === 1  || member.business_role_id === 2">
+      <div class="card" >
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 class="text-lg font-semibold text-gray-900">Members</h2>
 
           <button
@@ -81,7 +81,7 @@
         </div>
 
         <div v-if="business.members && business.members.length > 0 " class="divide-y divide-gray-200">
-          <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors" v-if="member.business_role_id === 1  || member.business_role_id === 2">
+          <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div class="flex justify-between items-center" >
               <div class="flex-1">
                 <p class="font-medium text-gray-900">{{ member.name }}( {{ getRoleName(member.business_role_id) }})</p>

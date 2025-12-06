@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,25 +16,22 @@ class TransactionResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'cashbook_id' => $this->cashbook_id,
-            'category_id' => $this->category_id,
-            'payment_method_id' => $this->payment_method_id,
-            'party_name' => $this->party_name,
-            'remark' => $this->remark,
-            'document' => $this->document,
-            'document_url' => $this->document ? asset('storage/'.$this->document) : null,
-            'amount' => (float) $this->amount,
-            'transaction_datetime' => $this->transaction_datetime,
-            'description' => strip_tags($this->description),
-            'type' => $this->type,
-            'status' => $this->status,
-            'cashbook' => new CashbookResource($this->whenLoaded('cashbook')),
-            'category' => $this->whenLoaded('category'),
-            'payment_method' => $this->whenLoaded('paymentMethod'),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'id'                   => $this->id,
+            'party_name'           => $this->party_name,
+            'remark'               => $this->remark,
+            'document'             => $this->document,
+            'document_url'         => $this->document ? asset('storage/'.$this->document) : null,
+            'amount'               => (float) $this->amount,
+            'transaction_datetime' => Carbon::parse($this->transaction_datetime)->format('d M, Y h:i A'),
+            'description'          => strip_tags($this->description),
+            'type'                 => $this->type,
+            'status'               => $this->status,
+            'cashbook'             => new CashbookResource($this->whenLoaded('cashbook')),
+            'category'             => new CategoryResource($this->whenLoaded('category')),
+            'payment_method'       => new PaymentMethodResource($this->whenLoaded('paymentMethod')),
+            'creator'              => new UserResource($this->whenLoaded('creator')),
+            'created_at'           => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
+            'updated_at'           => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),
         ];
     }
 }
-

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Exception;
 use App\Models\User;
 use App\Models\Member;
 use Illuminate\Http\Request;
@@ -24,7 +25,17 @@ class MemberController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Member::with(['business', 'role', 'country', 'state', 'city']);
+        $userId = auth()->id();
+        $perPage = $request->get('per_page', 15);
+
+        $query = Member::with(['user', 'business', 'businessRole', 'cashbooks', 'country', 'state', 'city', 'creator']);
+
+        $query->where('created_by', $userId)->orWhereHas('business', function ($q) use ($userId) {
+            $q->where('created_by', $userId)
+                ->orWhereHas('members', function ($q2) use ($userId) {
+                    $q2->where('user_id', $userId)->orWhere('created_by', $userId);
+                });
+        });
 
         if ($request->has('business_id')) {
             $query->where('business_id', $request->business_id);
@@ -38,12 +49,13 @@ class MemberController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        $members = $query->latest()->paginate($request->get('per_page', 15));
+        $members = $query->latest()->paginate($perPage);
 
         return MemberResource::collection($members);
     }
@@ -54,30 +66,27 @@ class MemberController extends Controller
     public function store(StoreMemberRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['created_by'] = auth()->id();
+
         // Handle profile picture upload
         if ($request->hasFile('profile_pic')) {
             $data['profile_pic'] = $request->file('profile_pic')->store('members/profile-pics', 'public');
         }
+
         // Create user account
+        $newUser = false;
         $password = $data['password'] ?? 'password';
         $user = User::where('email', $data['email'])->first();
-        $newUser = false;
         if (!$user) {
-        // First time email -> create user
-        $newUser = true;
+            $newUser = true;
             $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($password),
-                'email_verified_at' => now(),
+                'name'       => $data['name'],
+                'email'      => $data['email'],
+                'password'   => Hash::make($password),
                 'created_by' => auth()->id(),
             ]);
         }
-        $exists = Member::where('user_id', $user->id)
-            ->where('business_id', $data['business_id'])
-            ->first();
 
+        $exists = Member::where('user_id', $user->id)->where('business_id', $data['business_id'])->first();
         if ($exists) {
             return response()->json([
                 'message' => 'This user is already added to this business.',
@@ -86,20 +95,34 @@ class MemberController extends Controller
                 ]
             ], 422);
         }
-        $data['email'] = $request->email;
+
+        if (auth()->id() == $user->id) {
+            return response()->json([
+                'message' => 'You cannot add yourself as a member to this business.',
+                'errors'  => [
+                    'email' => ['You cannot add yourself as a member to this business.']
+                ]
+            ], 422);
+        }
+
         unset($data['password']);
+        unset($data['email']);
         $data['user_id'] = $user->id;
+        $data['created_by'] = auth()->id();
+
         $member = Member::create($data);
-        $member->load(['business', 'role', 'country', 'state', 'city']);
+        $member->load(['user', 'business', 'businessRole', 'country', 'state', 'city', 'creator']);
+
+        /*
         // Send registration email
         try {
             Mail::to($user->email)->send(
                 new MemberRegistrationMail($member, $password, $newUser, $user)
             );
-
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to send member registration email: ' . $e->getMessage());
         }
+        */
 
         return response()->json([
             'message' => 'Member created successfully',
@@ -110,13 +133,11 @@ class MemberController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Member $member): JsonResponse
+    public function show(Member $member): MemberResource
     {
-        $member->load(['business', 'role', 'country', 'state', 'city']);
+        $member->load([ 'user', 'business', 'businessRole', 'cashbooks', 'country', 'state', 'city', 'creator']);
 
-        return response()->json([
-            'data' => new MemberResource($member),
-        ]);
+        return new MemberResource($member);
     }
 
     /**
@@ -125,7 +146,7 @@ class MemberController extends Controller
     public function update(UpdateMemberRequest $request, Member $member): JsonResponse
     {
         $data = $request->validated();
-        $data['updated_by'] = auth()->id();
+
         // Handle profile picture upload
         if ($request->hasFile('profile_pic')) {
             // Delete old profile picture
@@ -134,33 +155,48 @@ class MemberController extends Controller
             }
             $data['profile_pic'] = $request->file('profile_pic')->store('members/profile-pics', 'public');
         }
+
         // Create user account
+        $newUser = false;
         $password = $data['password'] ?? 'password';
-         $user = User::firstOrCreate(
-            ['email' => $data['email']],
-            [
-                'name' => $data['name'],
-                'password' => Hash::make($password),
-                'email_verified_at' => now(),
-                'updated_by' => $data['updated_by'],
+        $user = User::where('email', $data['email'])->first();
+        if (!$user) {
+            $newUser = true;
+            $user = User::create([
+                'name'       => $data['name'],
+                'email'      => $data['email'],
+                'password'   => Hash::make($password),
+                'created_by' => auth()->id(),
             ]);
-          $exists = Member::where('user_id', $user->id)
-            ->where('business_id', $data['business_id'])
-            ->where('id', '!=', $member->id) // exclude current member
-            ->first();
-        if ($exists) {
+        }
+
+        if (auth()->id() == $user->id) {
             return response()->json([
-                'message' => 'This user is already added to this business.',
+                'message' => 'You cannot add yourself as a member to this business.',
                 'errors'  => [
-                    'email' => ['This email already exists in this business.']
+                    'email' => ['You cannot add yourself as a member to this business.']
                 ]
             ], 422);
         }
-        unset($data['email']);
+
         unset($data['password']);
+        unset($data['email']);
         $data['user_id'] = $user->id;
+        $data['updated_by'] = auth()->id();
+
         $member->update($data);
-        $member->load(['business', 'role', 'country', 'state', 'city']);
+        $member->load(['user', 'business', 'businessRole', 'cashbooks', 'country', 'state', 'city', 'creator']);
+
+        /*
+        // Send registration email
+        try {
+            Mail::to($user->email)->send(
+                new MemberRegistrationMail($member, $password, $newUser, $user)
+            );
+        } catch (Exception $e) {
+            Log::error('Failed to send member registration email: ' . $e->getMessage());
+        }
+        */
 
         return response()->json([
             'message' => 'Member updated successfully',

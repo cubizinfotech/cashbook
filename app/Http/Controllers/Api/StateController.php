@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\State;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\StateResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class StateController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
         $query = State::where('status', 'active');
 
@@ -17,14 +21,8 @@ class StateController extends Controller
             $query->where('country_id', $request->country_id);
         }
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
-        }
-
         $states = $query->orderBy('name')->get();
 
-        return response()->json(['data' => $states]);
+        return StateResource::collection($states);
     }
 }
-

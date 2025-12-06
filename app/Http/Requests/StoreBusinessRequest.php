@@ -22,20 +22,18 @@ class StoreBusinessRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'gst_number' => 'nullable|string|max:255|unique:businesses,gst_number',
-            'phone' => 'nullable|string|max:255|unique:businesses,phone',
-            'email' => 'required|email|unique:members,email|unique:users,email|unique:businesses,email',
-            'website' => 'nullable|url|max:255|unique:businesses,website',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'address' => 'nullable|string|max:255',
-            'member_role_id'=>'nullable',
-            'country_id' => 'nullable|exists:countries,id',
-            'state_id' => 'nullable|exists:states,id',
-            'city_id' => 'nullable|exists:cities,id',
-            'zip_code' => 'nullable|string|max:255',
-            'status' => 'nullable|in:active,inactive,pending,suspended',
+            'gst_number'  => 'nullable|string|max:255|unique:businesses,gst_number',
+            'phone'       => 'nullable|string|max:255|unique:businesses,phone',
+            'email'       => 'required|email|unique:members,email|unique:users,email|unique:businesses,email',
+            'website'     => 'nullable|url|max:255|unique:businesses,website',
+            'logo'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'address'     => 'nullable|string|max:255',
+            'country_id'  => 'nullable|exists:countries,id',
+            'state_id'    => 'nullable|exists:states,id',
+            'city_id'     => 'nullable|exists:cities,id',
+            'zip_code'    => 'nullable|string|max:255',
         ];
     }
 }

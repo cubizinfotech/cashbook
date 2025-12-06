@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('name');
             $table->date('date_of_birth')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
-            $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->string('profile_pic')->nullable();
             $table->text('description')->nullable();
@@ -35,7 +34,6 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['business_id', 'email']);
             $table->unique(['business_id', 'phone']);
         });
     }

@@ -49,8 +49,13 @@ class Member extends Model
         return $this->belongsTo(Business::class);
     }
 
-    public function role() {
+    public function businessRole() {
         return $this->belongsTo(BusinessRole::class, 'business_role_id');
+    }
+
+    public function cashbooks()
+    {
+        return $this->belongsToMany(Cashbook::class, 'cashbook_member', 'member_id', 'cashbook_id');
     }
 
     public function country() {

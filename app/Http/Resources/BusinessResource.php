@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,33 +16,28 @@ class BusinessResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-
-            'description' => strip_tags($this->description),
-            'gst_number' => $this->gst_number,
-            'phone' => $this->phone,
-            'email' => $this->email,
-            'website' => $this->website,
-            'logo' => $this->logo,
-            'address' => $this->address,
-            'country_id' => $this->country_id,
-            'state_id' => $this->state_id,
-            'city_id' => $this->city_id,
-            'zip_code' => $this->zip_code,
-            'status' => $this->status,
-            'country' => $this->whenLoaded('country'),
-            'state' => $this->whenLoaded('state'),
-            'city' => $this->whenLoaded('city'),
-            'members' => MemberResource::collection($this->whenLoaded('members')),
-            'users' => UserResource::collection($this->whenLoaded('users')),
-
-            'cashbooks' => CashbookResource::collection($this->whenLoaded('cashbooks')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'is_current_user' => auth()->user()->email === $this->email
-
+            'id'            => $this->id,
+            'name'          => $this->name,
+            'description'   => strip_tags($this->description),
+            'gst_number'    => $this->gst_number,
+            'phone'         => $this->phone,
+            'email'         => $this->email,
+            'website'       => $this->website,
+            'logo'          => $this->logo,
+            'address'       => $this->address,
+            'zip_code'      => $this->zip_code,
+            'status'        => $this->status,
+            'country'       => new CountryResource($this->whenLoaded('country')),
+            'state'         => new StateResource($this->whenLoaded('state')),
+            'city'          => new CityResource($this->whenLoaded('city')),
+            'members'       => MemberResource::collection($this->whenLoaded('members')),
+            'cashbooks'     => CashbookResource::collection($this->whenLoaded('cashbooks')),
+            'creator'       => new UserResource($this->whenLoaded('creator')),
+            'created_at'    => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
+            'updated_at'    => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),
+            'business_role' => ucwords(auth()->id() == $this->created_by
+                                ? 'owner'
+                                : optional(collect($this->members ?? [])->firstWhere('user_id', auth()->id()))->businessRole->name),
         ];
     }
 }
-

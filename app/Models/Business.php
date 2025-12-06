@@ -13,7 +13,6 @@ class Business extends Model
      protected $table = 'businesses';
 
     protected $fillable = [
-        'member_role_id',
         'name',
         'description',
         'gst_number',

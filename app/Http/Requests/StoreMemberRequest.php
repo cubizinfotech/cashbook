@@ -25,14 +25,6 @@ class StoreMemberRequest extends FormRequest
             'name'            => 'required|string|max:255',
             'date_of_birth'   => 'nullable|date',
             'gender'          => 'nullable|in:male,female,other',
-            // Validate email unique *within the same business*
-            'email'           => [
-                'required',
-                'email',
-                'max:255',
-            ],
-
-            // Validate phone unique *within the same business*
             'phone' => [
                 'nullable',
                 'string',
@@ -41,6 +33,7 @@ class StoreMemberRequest extends FormRequest
                     return $query->where('business_id', $businessId);
                 }),
             ],
+            'email'           => 'required|email|max:255',
             'password'        => 'nullable|string|min:8',
             'profile_pic'     => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'description'     => 'nullable|string',
@@ -49,7 +42,6 @@ class StoreMemberRequest extends FormRequest
             'state_id'        => 'nullable|exists:states,id',
             'city_id'         => 'nullable|exists:cities,id',
             'zip_code'        => 'nullable|string|max:255',
-            'status'          => 'nullable|in:active,inactive,pending,suspended',
         ];
     }
 }
