@@ -32,6 +32,8 @@ class BusinessResource extends JsonResource
             'city'          => new CityResource($this->whenLoaded('city')),
             'members'       => MemberResource::collection($this->whenLoaded('members')),
             'cashbooks'     => CashbookResource::collection($this->whenLoaded('cashbooks')),
+            'total_members' => $this->members()->count(),
+            'total_cashbooks'=> $this->cashbooks()->count(),
             'creator'       => new UserResource($this->whenLoaded('creator')),
             'created_at'    => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
             'updated_at'    => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),

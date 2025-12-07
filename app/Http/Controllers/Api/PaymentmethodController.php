@@ -39,7 +39,6 @@ class PaymentMethodController extends Controller
         $data['created_by']  = auth()->id();
 
         $paymentMethod = PaymentMethod::create($data);
-        $paymentMethod->load(['cashbook', 'creator']);
 
         return response()->json([
             'message' => 'Payment method created successfully',
@@ -67,7 +66,6 @@ class PaymentMethodController extends Controller
         $data['updated_by'] = auth()->id();
 
         $paymentMethod->update($data);
-        $paymentMethod->load(['cashbook', 'creator']);
 
         return response()->json([
             'message' => 'Payment method updated successfully',

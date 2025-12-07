@@ -111,7 +111,7 @@ class MemberController extends Controller
         $data['created_by'] = auth()->id();
 
         $member = Member::create($data);
-        $member->load(['user', 'business', 'businessRole', 'country', 'state', 'city', 'creator']);
+        $member->load(['user', 'businessRole']);
 
         /*
         // Send registration email
@@ -185,7 +185,7 @@ class MemberController extends Controller
         $data['updated_by'] = auth()->id();
 
         $member->update($data);
-        $member->load(['user', 'business', 'businessRole', 'cashbooks', 'country', 'state', 'city', 'creator']);
+        $member->load(['user', 'businessRole']);
 
         /*
         // Send registration email

@@ -33,7 +33,6 @@ class CategoryController extends Controller
         $data['created_by']  = auth()->id();
 
         $paymentMethod = Category::create($data);
-        $paymentMethod->load(['cashbook', 'creator']);
 
         return response()->json([
             'message' => 'Category created successfully',
@@ -61,7 +60,6 @@ class CategoryController extends Controller
         $data['updated_by'] = auth()->id();
 
         $paymentMethod->update($data);
-        $paymentMethod->load(['cashbook', 'creator']);
 
         return response()->json([
             'message' => 'Category updated successfully',

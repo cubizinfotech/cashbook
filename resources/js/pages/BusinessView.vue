@@ -30,10 +30,10 @@
               <h1 class="text-3xl font-bold text-gray-900">{{ business.name }}</h1>
               <span
                 :class="{
-                  'bg-emerald-100 text-emerald-800': business.status === 'active',
-                  'bg-red-100 text-red-800': business.status === 'inactive',
-                  'bg-yellow-100 text-yellow-800': business.status === 'pending',
-                  'bg-gray-100 text-gray-800': business.status === 'suspended'
+                  'bg-emerald-100 text-emerald-800': business.status == 'active',
+                  'bg-red-100 text-red-800': business.status == 'inactive',
+                  'bg-yellow-100 text-yellow-800': business.status == 'pending',
+                  'bg-gray-100 text-gray-800': business.status == 'suspended'
                 }"
                 class="px-3 py-1 text-sm font-medium rounded-full">
                 {{ business.status }}
@@ -68,7 +68,7 @@
       <!-- Members Section -->
       <div class="card" >
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-900">Members</h2>
+          <h2 class="text-lg font-semibold text-gray-900">Members <span class="text-sm font-semibold">({{ business.total_members }})</span></h2>
 
           <button
             @click="showMemberForm = true"
@@ -84,9 +84,9 @@
           <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div class="flex justify-between items-center" >
               <div class="flex-1">
-                <p class="font-medium text-gray-900">{{ member.name }}( {{ getRoleName(member.business_role_id) }})</p>
+                <p class="font-medium text-gray-900">{{ member.name }} <span class="text-sm font-semibold">({{ member.business_role.name }})</span></p>
                 <p class="text-sm text-gray-500 mt-1">
-                    {{ getUserEmailForMember(member) }}
+                    {{ member?.user?.email }}
                 </p>
                 <p v-if="member.phone" class="text-sm text-gray-500">{{ member.phone }}</p>
               </div>
@@ -118,7 +118,7 @@
       <!-- Cashbooks Section -->
       <div class="card">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-900">Cashbooks</h2>
+          <h2 class="text-lg font-semibold text-gray-900">Cashbooks <span class="text-sm font-semibold">({{ business.total_cashbooks }})</span></h2>
           <button
             @click="showCashbookForm = true"
             class="btn-primary text-sm"
@@ -236,18 +236,6 @@ const editMember = (member) => {
 };
 
 const user = ref(null);
-onMounted(async () => {
-  try {
-    const response = await axios.get('/api/user');
-    user.value = response.data;
-    console.log(response.data);
-
-      await loadRoles(); // <-- LOAD ROLES HERE
-
-  } catch (error) {
-    console.error('Failed to fetch user', error);
-  }
-});
 const confirmDeleteMember = async (member) => {
   if (confirm(`Are you sure you want to delete "${member.name}"? This action cannot be undone.`)) {
     try {
@@ -295,15 +283,4 @@ const handleCashbookSaved = async () => {
   closeCashbookForm();
   await businessStore.fetchBusiness(props.id);
 };
-const getRoleName = (roleId) => {
-  const role = roles.value.find(r => r.id === roleId);
-  return role ? role.name : "Unknown";
-};
-const getUserEmailForMember = (member) => {
-  const users = businessStore.currentBusiness?.users || [];
-  const matchedUser = users.find(u => u.id === member.user_id);
-  return matchedUser ? matchedUser.email : "No email";
-};
-
-
 </script>

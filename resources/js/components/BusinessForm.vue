@@ -88,6 +88,17 @@
             <span v-if="errors.gst_number && touched.gst_number" class="error-message">{{ errors.gst_number }}</span>
           </div>
 
+          <!-- Logo Upload -->
+          <div class="md:col-span-2">
+            <FileUpload
+              v-model="form.logo"
+              label="Business Logo"
+              accept="image/*"
+              accept-text="PNG, JPG, GIF up to 2MB"
+              :error="errors.logo && touched.logo ? errors.logo : ''"
+            />
+          </div>
+
           <!-- Address -->
           <div class="md:col-span-2">
             <label class="label-field">Address</label>
@@ -100,17 +111,6 @@
               placeholder="Enter business address"
             />
             <span v-if="errors.address && touched.address" class="error-message">{{ errors.address }}</span>
-          </div>
-
-          <!-- Logo Upload -->
-          <div class="md:col-span-2">
-            <FileUpload
-              v-model="form.logo"
-              label="Business Logo"
-              accept="image/*"
-              accept-text="PNG, JPG, GIF up to 2MB"
-              :error="errors.logo && touched.logo ? errors.logo : ''"
-            />
           </div>
 
           <!-- Location Fields -->

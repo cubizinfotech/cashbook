@@ -79,19 +79,17 @@
                 :to="`/businesses/${business.id}`"
                 class="text-xl font-semibold text-gray-900 hover:text-sky-600 transition-colors block truncate"
               >
-
-                {{ business.name }}<span class="text-sm font-semibold ">({{ getBusinessRole(business.id) }})</span>
+                {{ business.name }} <span class="text-sm font-semibold">({{ business.business_role }})</span>
               </router-link>
               <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ business.description || 'No description' }}</p>
             </div>
 
-
             <span
               :class="{
-                'bg-emerald-100 text-emerald-800': business.status === 'active',
-                'bg-red-100 text-red-800': business.status === 'inactive',
-                'bg-yellow-100 text-yellow-800': business.status === 'pending',
-                'bg-gray-100 text-gray-800': business.status === 'suspended'
+                'bg-emerald-100 text-emerald-800': business.status == 'active',
+                'bg-red-100 text-red-800': business.status == 'inactive',
+                'bg-yellow-100 text-yellow-800': business.status == 'pending',
+                'bg-gray-100 text-gray-800': business.status == 'suspended'
               }"
               class="px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-2 flex-shrink-0"
             >
@@ -116,9 +114,9 @@
 
           <div class="flex items-center justify-between pt-4 border-t border-gray-200">
             <div class="text-sm text-gray-500">
-              <span v-if="business.members?.length">{{ business.members.length }} members</span>
-              <span v-if="business.members?.length && business.cashbooks?.length"> • </span>
-              <span v-if="business.cashbooks?.length">{{ business.cashbooks.length }} cashbooks</span>
+              <span>{{ business.total_members }} members</span>
+              <span> • </span>
+              <span>{{ business.total_cashbooks }} cashbooks</span>
             </div>
             <div class="flex space-x-3">
               <button
@@ -198,23 +196,6 @@ console.log(businesses);
 onMounted(async () => {
   await businessStore.fetchBusinesses();
 });
-onMounted(async () => {
-    await memberStore.fetchMembers();
-    await loadRoles();
-});
-
-const getBusinessRole = (businessId) => {
-  // Find the member for this business
-  const member = memberStore.members.find(
-    m => Number(m.business_id) === Number(businessId)
-  );
-  if (!member) return "No role";
-  // Find the role in roles list
-  const role = roles.value.find(
-    r => Number(r.id) === Number(member.business_role_id)
-  );
-  return role ? role.name : "Unknown role";
-};
 
 const handleSearch = () => {
   clearTimeout(searchTimeout);

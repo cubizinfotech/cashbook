@@ -94,7 +94,7 @@ class TransactionController extends Controller
         $data['created_by'] = auth()->id();
 
         $transaction = Transaction::create($data);
-        $transaction->load(['cashbook', 'category', 'paymentMethod', 'creator']);
+        $transaction->load(['category', 'paymentMethod']);
 
         return response()->json([
             'message' => 'Transaction created successfully',
@@ -107,7 +107,7 @@ class TransactionController extends Controller
      */
     public function show(Transaction $transaction): TransactionResource
     {
-        $transaction->load(['cashbook', 'cashbook.business', 'cashbook.members', 'category', 'paymentMethod', 'creator']);
+        $transaction->load(['cashbook', 'cashbook.business', 'cashbook.members', 'cashbook.members.user', 'category', 'paymentMethod', 'creator']);
 
         return new TransactionResource($transaction);
     }
@@ -131,7 +131,7 @@ class TransactionController extends Controller
         $data['updated_by'] = auth()->id();
 
         $transaction->update($data);
-        $transaction->load(['cashbook', 'category', 'paymentMethod', 'creator']);
+        $transaction->load(['category', 'paymentMethod']);
 
         return response()->json([
             'message' => 'Transaction updated successfully',
