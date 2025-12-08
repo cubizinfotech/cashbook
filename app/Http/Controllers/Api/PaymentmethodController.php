@@ -2,23 +2,31 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Illuminate\Http\JsonResponse;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\PaymentMethodResource;
 use App\Http\Requests\StorePaymentMethodRequest;
 use App\Http\Requests\UpdatePaymentMethodRequest;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-class PaymentmethodController extends Controller
+class PaymentMethodController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request): AnonymousResourceCollection
     {
-        return PaymentMethod::select('id', 'name', 'description', 'case_id')
-            ->orderBy('name')
-            ->get();
+        $query = PaymentMethod::where('status', 'active')->orWhere('cashbook_id', null);
+
+        if ($request->has('cashbook_id')) {
+            $query = $query->orWhere('cashbook_id', $request->cashbook_id);
+        }
+
+        $paymentMethods = $query->orderBy('name')->get();
+
+        return PaymentMethodResource::collection($paymentMethods);
     }
 
     /**
@@ -26,50 +34,50 @@ class PaymentmethodController extends Controller
      */
     public function store(StorePaymentMethodRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $data = $request->validated();
 
-        $paymentMethod = PaymentMethod::create([
-            'name'        => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'case_id'     => $validated['cash_id'], // mapped
-            'status'      => 1,
-            'created_by'  => auth()->id(),
-        ]);
+        $data['created_by']  = auth()->id();
+
+        $paymentMethod = PaymentMethod::create($data);
 
         return response()->json([
             'message' => 'Payment method created successfully',
-            'data'    => $paymentMethod,
+            'data' => new PaymentMethodResource($paymentMethod),
         ], 201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(PaymentMethod $paymentMethod): PaymentMethodResource
+    {
+        $paymentMethod->load(['cashbook', 'creator']);
+
+        return new PaymentMethodResource($paymentMethod);
     }
 
     /**
      * Update the specified resource.
      */
-    public function update(UpdatePaymentMethodRequest $request, string $id): JsonResponse
+    public function update(UpdatePaymentMethodRequest $request, PaymentMethod $paymentMethod): JsonResponse
     {
-        $validated = $request->validated();
+        $data = $request->validated();
 
-        $paymentMethod = PaymentMethod::findOrFail($id);
+        $data['updated_by'] = auth()->id();
 
-        $paymentMethod->update([
-            'name'        => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'case_id'     => $validated['case_id'],
-            'updated_by'  => auth()->id(),
-        ]);
+        $paymentMethod->update($data);
 
         return response()->json([
             'message' => 'Payment method updated successfully',
-            'data'    => $paymentMethod,
+            'data' => new PaymentMethodResource($paymentMethod),
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(PaymentMethod $paymentMethod): JsonResponse
     {
-        $paymentMethod = PaymentMethod::findOrFail($id);
         $paymentMethod->delete();
 
         return response()->json([

@@ -16,7 +16,6 @@ class CountryResource extends JsonResource
             'country_code' => $this->country_code,
             'phone_code'   => $this->phone_code,
             'status'       => $this->status,
-            'status'       => $this->status,
             'creator'      => new UserResource($this->whenLoaded('creator')),
             'created_at'   => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
             'updated_at'   => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),

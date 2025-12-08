@@ -2,25 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\BusinessRole;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\BusinessRoleResource;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class BusinessRoleController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(): AnonymousResourceCollection
     {
-        $query = BusinessRole::where('status', 'active');
+        $businessRoles = BusinessRole::where('status', 'active')->orderBy('name')->get();
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        $roles = $query->orderBy('name')->get();
-
-        return response()->json(['data' => $roles]);
+        return BusinessRoleResource::collection($businessRoles);
     }
 }
-

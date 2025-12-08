@@ -22,9 +22,9 @@ class StorePaymentMethodRequest extends FormRequest
     public function rules(): array
     {
         return [
-        'name' => 'required|string|max:255|unique:payment_methods,name',
-        'description' => 'nullable|string|max:255',
-        'cash_id' => 'nullable|integer', // FIXED
-    ];
+            'name'        => 'required|string|max:255|unique:payment_methods,name',
+            'description' => 'nullable|string|max:255',
+            'cashbook_id' => 'nullable|integer|exists:cashbooks,id',
+        ];
     }
 }

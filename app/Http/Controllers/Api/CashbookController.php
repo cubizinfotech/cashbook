@@ -21,7 +21,7 @@ class CashbookController extends Controller
         $userId = auth()->id();
         $perPage = $request->get('per_page', 15);
 
-        $query = Cashbook::with(['business', 'entries', 'members', 'creator']);
+        $query = Cashbook::with(['business', 'members', 'members.user', 'entries', 'creator']);
 
         $query->where('created_by', $userId)->orWhereHas('business', function ($q) use ($userId) {
             $q->where('created_by', $userId)
@@ -64,9 +64,9 @@ class CashbookController extends Controller
     {
         $data = $request->validated();
 
-        unset($data['member_ids']);
         $data['created_by'] = auth()->id();
         $memberIds = $data['member_ids'] ?? [];
+        unset($data['member_ids']);
 
         $cashbook = Cashbook::create($data);
 
@@ -75,7 +75,7 @@ class CashbookController extends Controller
             $cashbook->members()->sync($memberIds);
         }
 
-        $cashbook->load(['business', 'members', 'creator']);
+        $cashbook->load(['members']);
 
         return response()->json([
             'message' => 'Cashbook created successfully',
@@ -88,7 +88,7 @@ class CashbookController extends Controller
      */
     public function show(Cashbook $cashbook): CashbookResource
     {
-        $cashbook->load(['business', 'members', 'entries', 'entries.category', 'entries.paymentMethod', 'creator']);
+        $cashbook->load(['business', 'members', 'members.user', 'entries', 'entries.category', 'entries.paymentMethod', 'creator']);
 
         return  new CashbookResource($cashbook);
     }
@@ -100,9 +100,9 @@ class CashbookController extends Controller
     {
         $data = $request->validated();
 
-        unset($data['member_ids']);
         $data['updated_by'] = auth()->id();
         $memberIds = $data['member_ids'] ?? null;
+        unset($data['member_ids']);
 
         $cashbook->update($data);
 
@@ -111,7 +111,7 @@ class CashbookController extends Controller
             $cashbook->members()->sync($memberIds);
         }
 
-        $cashbook->load(['business', 'members', 'entries', 'creator']);
+        $cashbook->load(['members']);
 
         return response()->json([
             'message' => 'Cashbook updated successfully',

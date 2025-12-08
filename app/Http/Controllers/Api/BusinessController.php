@@ -22,7 +22,7 @@ class BusinessController extends Controller
         $userId = auth()->id();
         $perPage = $request->get('per_page', 1);
 
-        $query = Business::with(['country', 'state', 'city','members', 'cashbooks', 'creator']);
+        $query = Business::with([/* 'country', 'state', 'city','members', 'cashbooks', 'creator' */]);
 
         $query->where('created_by', $userId)->orWhereHas('members', function ($q) use ($userId) {
             $q->where('user_id', $userId);
@@ -62,21 +62,9 @@ class BusinessController extends Controller
             $data['logo'] = $request->file('logo')->store('businesses/logos', 'public');
         }
 
-        // Ensure location fields are properly set (convert empty strings to null)
-        if (isset($data['country_id'])) {
-            $data['country_id'] = !empty($data['country_id']) ? (int)$data['country_id'] : null;
-        }
-        if (isset($data['state_id'])) {
-            $data['state_id'] = !empty($data['state_id']) ? (int)$data['state_id'] : null;
-        }
-        if (isset($data['city_id'])) {
-            $data['city_id'] = !empty($data['city_id']) ? (int)$data['city_id'] : null;
-        }
-
         $data['created_by'] = auth()->id();
 
         $business = Business::create($data);
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'creator']);
 
         return response()->json([
             'message' => 'Business created successfully',
@@ -89,7 +77,7 @@ class BusinessController extends Controller
      */
     public function show(Business $business): BusinessResource
     {
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'cashbooks.members', 'creator']);
+        $business->load(['country', 'state', 'city', 'members', 'members.user', 'members.businessRole', 'cashbooks', 'cashbooks.members', 'creator']);
 
         return new BusinessResource($business);
     }
@@ -110,21 +98,9 @@ class BusinessController extends Controller
             $data['logo'] = $request->file('logo')->store('businesses/logos', 'public');
         }
 
-        // Ensure location fields are properly set (convert empty strings to null)
-        if (isset($data['country_id'])) {
-            $data['country_id'] = !empty($data['country_id']) ? (int)$data['country_id'] : null;
-        }
-        if (isset($data['state_id'])) {
-            $data['state_id'] = !empty($data['state_id']) ? (int)$data['state_id'] : null;
-        }
-        if (isset($data['city_id'])) {
-            $data['city_id'] = !empty($data['city_id']) ? (int)$data['city_id'] : null;
-        }
-
         $data['updated_by'] = auth()->id();
 
         $business->update($data);
-        $business->load(['country', 'state', 'city', 'members', 'cashbooks', 'creator']);
 
         return response()->json([
             'message' => 'Business updated successfully',

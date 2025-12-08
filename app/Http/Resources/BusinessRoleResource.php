@@ -17,7 +17,7 @@ class BusinessRoleResource extends JsonResource
     {
         return [
             'id'          => $this->id,
-            'name'        => $this->name,
+            'name'        => ucwords($this->name),
             'description' => $this->description,
             'status'      => $this->status,
             'creator'     => new UserResource($this->whenLoaded('creator')),

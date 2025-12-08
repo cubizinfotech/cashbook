@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdatePaymentMethodRequest extends FormRequest
+class StoreCategoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +21,10 @@ class UpdatePaymentMethodRequest extends FormRequest
      */
     public function rules(): array
     {
-        $paymentMethodId = $this->route('payment-method');
-
         return [
-            'name'        => ['required','string', 'max:255', Rule::unique('payment_methods', 'name')->ignore($paymentMethodId)],
-            'description' => 'nullable|string|max:500',
+            'name'        => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string|max:255',
             'cashbook_id' => 'nullable|integer|exists:cashbooks,id',
-            'status'      => 'nullable|in:active,inactive,pending,suspended',
         ];
     }
 }

@@ -26,7 +26,7 @@ class StoreBusinessRequest extends FormRequest
             'description' => 'nullable|string',
             'gst_number'  => 'nullable|string|max:255|unique:businesses,gst_number',
             'phone'       => 'nullable|string|max:255|unique:businesses,phone',
-            'email'       => 'required|email|unique:members,email|unique:users,email|unique:businesses,email',
+            'email'       => 'required|email|unique:businesses,email',
             'website'     => 'nullable|url|max:255|unique:businesses,website',
             'logo'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'address'     => 'nullable|string|max:255',

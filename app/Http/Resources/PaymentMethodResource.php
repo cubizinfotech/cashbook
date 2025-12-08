@@ -20,6 +20,7 @@ class PaymentMethodResource extends JsonResource
             'name'        => $this->name,
             'description' => $this->description,
             'status'      => $this->status,
+            'cashbook'    => new CashbookResource($this->whenLoaded('cashbook')),
             'creator'     => new UserResource($this->whenLoaded('creator')),
             'created_at'  => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
             'updated_at'  => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),

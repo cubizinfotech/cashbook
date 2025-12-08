@@ -27,18 +27,22 @@ class Cashbook extends Model
     protected $casts = [
         'custom_fields' => 'array'
     ];
-    
+
     // Relations
+    public function cashbook() {
+        return $this->belongsTo(Cashbook::class);
+    }
+
     public function business() {
         return $this->belongsTo(Business::class);
     }
 
-    public function entries() {
-        return $this->hasMany(Transaction::class);
-    }
-
     public function members() {
         return $this->belongsToMany(Member::class, 'cashbook_member', 'cashbook_id', 'member_id');
+    }
+
+    public function entries() {
+        return $this->hasMany(Transaction::class);
     }
 
     public function creator() {

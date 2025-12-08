@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('cashbook_id')->nullable()->constrained('cashbooks')->nullOnDelete('cascade');
             $table->string('name')->unique();
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive', 'pending', 'suspended'])->default('active');

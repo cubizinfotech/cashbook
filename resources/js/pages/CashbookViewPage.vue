@@ -751,7 +751,7 @@ const paymentMethodForm = reactive({
   id: null,
   name: '',
   description: '',
-  case_id: ''
+  cashbook_id: ''
 });
 
 const paymentMethodRules = {
@@ -780,7 +780,7 @@ const openAddPaymentMethod = () => {
   paymentMethodForm.id = null;
   paymentMethodForm.name = '';
   paymentMethodForm.description = '';
-  paymentMethodForm.case_id = '';
+  paymentMethodForm.cashbook_id = '';
   showPaymentMethodPopup.value = true;
 };
 
@@ -797,7 +797,7 @@ const editPaymentMethod = () => {
   paymentMethodForm.id = selected.value;
   paymentMethodForm.name = selected.label;
     paymentMethodForm.description = selected.description || '';
-  paymentMethodForm.case_id = selected.case_id || '';
+  paymentMethodForm.cashbook_id = selected.cashbook_id || '';
 
   showPaymentMethodPopup.value = true;
 };
@@ -809,7 +809,7 @@ const closePaymentMethodPopup = () => {
   paymentMethodForm.id = null;
   paymentMethodForm.name = '';
   paymentMethodForm.description = '';
-  paymentMethodForm.case_id = '';
+  paymentMethodForm.cashbook_id = '';
 };
 
 
@@ -832,7 +832,7 @@ const saveNewPaymentMethod = async () => {
       label: created.name,
       value: created.id,
       description: created.description,
-      case_id: created.case_id
+      cashbook_id: created.cashbook_id
     });
 
     form.payment_method_id = created.id;
@@ -854,7 +854,7 @@ const updatePaymentMethod = async () => {
     const res = await axios.put(`/api/payment-methods/${paymentMethodForm.id}`, {
       name: paymentMethodForm.name,
       description: paymentMethodForm.description,
-      case_id: paymentMethodForm.case_id,
+      cashbook_id: paymentMethodForm.cashbook_id,
     });
 
     const updated = res.data.data;
@@ -866,7 +866,7 @@ const updatePaymentMethod = async () => {
             label: updated.name,
             value: updated.id,
             description: updated.description,
-            case_id: updated.case_id
+            cashbook_id: updated.cashbook_id
           }
         : pm
     );

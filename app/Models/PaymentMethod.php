@@ -13,7 +13,7 @@ class PaymentMethod extends Model
     protected $table = 'payment_methods';
 
     protected $fillable = [
-        'case_id',
+        'cashbook_id',
         'name',
         'description',
         'status',
@@ -24,6 +24,10 @@ class PaymentMethod extends Model
     public $timestamps = true;
 
     // Relations
+    public function cashbook() {
+        return $this->belongsTo(Cashbook::class);
+    }
+
     public function transactions() {
         return $this->hasMany(Transaction::class);
     }

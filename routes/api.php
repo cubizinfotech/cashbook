@@ -56,15 +56,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Transactions
     Route::apiResource('transactions', TransactionController::class);
 
-    // Countries, States, Cities
+    // Categories
+    Route::apiResource('categories', CategoryController::class);
+
+    // Payment Methods
+    Route::apiResource('payment-methods', PaymentMethodController::class);
+
+    // Countries, States, Cities, and Business Roles
     Route::get('countries', [CountryController::class, 'index']);
     Route::get('states', [StateController::class, 'index']);
     Route::get('cities', [CityController::class, 'index']);
-
-    // Business Roles
     Route::get('business-roles', [BusinessRoleController::class, 'index']);
-    Route::get('/categories', [CategoryController::class, 'index']);
-
-    Route::apiResource('payment-methods', PaymentmethodController::class);
 });
 

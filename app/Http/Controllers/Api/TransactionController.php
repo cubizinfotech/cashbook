@@ -18,10 +18,35 @@ class TransactionController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Transaction::with(['cashbook', 'category', 'paymentMethod']);
+        $userId = auth()->id();
+        $perPage = $request->get('per_page', 1);
+
+        $query = Transaction::with(['cashbook', 'category', 'paymentMethod', 'creator']);
+
+        $query->where(function ($q) use ($userId) {
+            $q->where('created_by', $userId)
+            ->orWhereHas('cashbook', function ($qb) use ($userId) {
+                $qb->where('created_by', $userId)
+                    ->orWhereHas('business', function ($q1) use ($userId) {
+                        $q1->where('created_by', $userId);
+                    })
+                    ->orWhereHas('members', function ($q2) use ($userId) {
+                        $q2->where('user_id', $userId)
+                            ->orWhere('created_by', $userId);
+                    });
+            });
+        });
 
         if ($request->has('cashbook_id')) {
             $query->where('cashbook_id', $request->cashbook_id);
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->has('payment_method_id')) {
+            $query->where('payment_method_id', $request->payment_method_id);
         }
 
         if ($request->has('type')) {
@@ -49,7 +74,7 @@ class TransactionController extends Controller
             $query->whereDate('transaction_datetime', '<=', $request->date_to);
         }
 
-        $transactions = $query->latest('transaction_datetime')->paginate($request->get('per_page', 15));
+        $transactions = $query->latest('transaction_datetime')->paginate($perPage);
 
         return TransactionResource::collection($transactions);
     }
@@ -60,14 +85,16 @@ class TransactionController extends Controller
     public function store(StoreTransactionRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['created_by'] = auth()->id();
-          // Handle logo upload
+
+        // Handle logo upload
         if ($request->hasFile('document')) {
             $data['document'] = $request->file('document')->store('businesses/document', 'public');
         }
 
+        $data['created_by'] = auth()->id();
+
         $transaction = Transaction::create($data);
-        $transaction->load(['cashbook', 'category', 'paymentMethod']);
+        $transaction->load(['category', 'paymentMethod']);
 
         return response()->json([
             'message' => 'Transaction created successfully',
@@ -78,13 +105,11 @@ class TransactionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Transaction $transaction): JsonResponse
+    public function show(Transaction $transaction): TransactionResource
     {
-        $transaction->load(['cashbook', 'category', 'paymentMethod']);
+        $transaction->load(['cashbook', 'cashbook.business', 'cashbook.members', 'cashbook.members.user', 'category', 'paymentMethod', 'creator']);
 
-        return response()->json([
-            'data' => new TransactionResource($transaction),
-        ]);
+        return new TransactionResource($transaction);
     }
 
     /**
@@ -93,11 +118,9 @@ class TransactionController extends Controller
     public function update(UpdateTransactionRequest $request, Transaction $transaction): JsonResponse
     {
         $data = $request->validated();
-        $data['updated_by'] = auth()->id();
 
         // handle new document upload: store new file and delete old one if exists
-
-          if ($request->hasFile('document')) {
+        if ($request->hasFile('document')) {
             // Delete old logo
             if ($transaction->document) {
                 Storage::disk('public')->delete($transaction->document);
@@ -105,8 +128,10 @@ class TransactionController extends Controller
             $data['document'] = $request->file('document')->store('businesses/document', 'public');
         }
 
+        $data['updated_by'] = auth()->id();
+
         $transaction->update($data);
-        $transaction->load(['cashbook', 'category', 'paymentMethod']);
+        $transaction->load(['category', 'paymentMethod']);
 
         return response()->json([
             'message' => 'Transaction updated successfully',
@@ -118,27 +143,11 @@ class TransactionController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(Transaction $transaction): JsonResponse
-{
-    // Delete file from storage if exists
-    if (!empty($transaction->document)) {
+    {
+        $transaction->delete();
 
-        // CASE 1 — DB stores full path like: "documents/abc.jpg"
-        if (Storage::disk('public')->exists($transaction->document)) {
-            Storage::disk('public')->delete($transaction->document);
-        }
-
-        // CASE 2 — DB stores only filename like: "abc.jpg"
-        if (Storage::disk('public')->exists('documents/' . $transaction->document)) {
-            Storage::disk('public')->delete('documents/' . $transaction->document);
-        }
+        return response()->json([
+            'message' => 'Transaction deleted successfully',
+        ]);
     }
-
-    // Delete DB record
-    $transaction->delete();
-
-    return response()->json([
-        'message' => 'Transaction deleted successfully',
-    ]);
 }
-}
-
