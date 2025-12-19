@@ -120,6 +120,7 @@
               @update:model-value="updateLocation"
               :errors="errors"
               :touched="touched"
+              :prefetched-countries="prefetchedCountries"
             />
           </div>
 
@@ -185,7 +186,7 @@
 }
 </style>
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useBusinessStore } from '../stores/business';
 import { useValidation } from '../composables/useValidation';
 import LocationSelect from './LocationSelect.vue';
@@ -210,6 +211,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  createData: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['close', 'saved']);
@@ -222,6 +227,7 @@ const location = reactive({
   state_id: null,
   city_id: null,
 });
+const prefetchedCountries = computed(() => props.createData?.countries || []);
 
 const statusOptions = [
   { value: 'active', label: 'Active' },

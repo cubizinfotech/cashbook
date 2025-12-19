@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Country -->
     <div class="mb-4">
       <SearchableSelect
@@ -81,6 +81,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  prefetchedCountries: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(['update:modelValue', 'blur']);
@@ -119,6 +123,10 @@ onMounted(async () => {
 });
 
 const loadCountries = async () => {
+  if (props.prefetchedCountries && props.prefetchedCountries.length) {
+    countries.value = props.prefetchedCountries;
+    return;
+  }
   loadingCountries.value = true;
   try {
     const response = await axios.get('/api/countries');
@@ -194,6 +202,12 @@ const updateValue = () => {
   });
 };
 
+watch(() => props.prefetchedCountries, (val) => {
+  if (val && val.length) {
+    countries.value = val;
+  }
+});
+
 watch(() => props.modelValue, async (newVal) => {
   if (!newVal) return;
 
@@ -240,3 +254,4 @@ watch(() => props.modelValue, async (newVal) => {
   }
 }, { deep: true });
 </script>
+

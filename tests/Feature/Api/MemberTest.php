@@ -121,3 +121,4 @@ it('validates required fields when creating a member', function () {
         ->assertJsonValidationErrors(['business_id', 'name', 'email']);
 });
 
+

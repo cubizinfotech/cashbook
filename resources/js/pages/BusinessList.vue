@@ -28,7 +28,7 @@
         <p class="text-gray-600 mt-2">Manage your businesses and their details</p>
       </div>
       <button
-        @click="showForm = true"
+        @click="openBusinessForm()"
         class="btn-primary whitespace-nowrap"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,6 +49,18 @@
             placeholder="Search businesses by name, email, or phone..."
             class="input-field"
           />
+        </div>
+        <div class="md:w-56">
+          <select
+            v-model="statusFilter"
+            @change="handleSearch"
+            class="input-field"
+          >
+            <option value="">All Status</option>
+            <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
         </div>
       </div>
     </div>
@@ -146,7 +158,7 @@
       <p class="mt-1 text-sm text-gray-500">Get started by creating a new business.</p>
       <div class="mt-6">
         <button
-          @click="showForm = true"
+          @click="openBusinessForm()"
           class="btn-primary"
         >
           <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -161,9 +173,34 @@
     <BusinessForm
       v-if="showForm"
       :business="editingBusiness"
+      :create-data="businessCreateData"
       @close="closeForm"
       @saved="handleSaved"
     />
+
+    <div v-if="pagination" class="mt-6 flex items-center justify-between text-sm text-gray-700">
+      <div>
+        Showing <span class="font-medium">{{ pagination.from }}</span>
+        to <span class="font-medium">{{ pagination.to }}</span>
+        of <span class="font-medium">{{ pagination.total }}</span> results
+      </div>
+      <div class="flex space-x-2">
+        <button
+          @click="changePage(pagination.current_page - 1)"
+          :disabled="!pagination.prev_page_url"
+          class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <button
+          @click="changePage(pagination.current_page + 1)"
+          :disabled="!pagination.next_page_url"
+          class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -171,55 +208,72 @@
 import { ref, computed, onMounted } from 'vue';
 import { useBusinessStore } from '../stores/business';
 import BusinessForm from '../components/BusinessForm.vue';
-import { useMemberStore } from '../stores/member';
-const memberStore = useMemberStore();
-const roles = ref([]);
+
 const businessStore = useBusinessStore();
 const showForm = ref(false);
 const editingBusiness = ref(null);
 const searchQuery = ref('');
 const statusFilter = ref('');
+const perPage = ref(10);
+const businessCreateData = ref(null);
+
 let searchTimeout = null;
-const loadRoles = async () => {
-  try {
-    const response = await axios.get('/api/business-roles');
-    roles.value = response.data.data || [];
-    console.log("Loaded roles:", roles.value);
-  } catch (error) {
-    console.error('Failed to load roles', error);
-  }
-};
+
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'suspended', label: 'Suspended' },
+];
 
 const businesses = computed(() => businessStore.businesses);
-console.log(businesses);
+const pagination = computed(() => businessStore.pagination);
+
+const loadBusinesses = async (page = 1) => {
+  await businessStore.fetchBusinesses({
+    search: searchQuery.value,
+    status: statusFilter.value,
+    per_page: perPage.value,
+    page,
+  });
+};
 
 onMounted(async () => {
-  await businessStore.fetchBusinesses();
+  await loadBusinesses();
 });
 
 const handleSearch = () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(async () => {
-    await businessStore.fetchBusinesses({
-      search: searchQuery.value,
-      status: statusFilter.value,
-    });
-  }, 500);
+    await loadBusinesses();
+  }, 300);
 };
 
-const editBusiness = (business) => {
+const changePage = async (page) => {
+  if (!page || page < 1) return;
+  await loadBusinesses(page);
+};
+
+const openBusinessForm = async (business = null) => {
   editingBusiness.value = business;
+  businessCreateData.value = businessStore.createMeta;
+  if (!businessCreateData.value) {
+    try {
+      businessCreateData.value = await businessStore.fetchCreateData();
+    } catch (error) {
+      // allow form to open even if prefetch fails
+    }
+  }
   showForm.value = true;
 };
+
+const editBusiness = (business) => openBusinessForm(business);
 
 const confirmDelete = async (business) => {
   if (confirm(`Are you sure you want to delete "${business.name}"? This action cannot be undone.`)) {
     try {
       await businessStore.deleteBusiness(business.id);
-      await businessStore.fetchBusinesses({
-        search: searchQuery.value,
-        status: statusFilter.value,
-      });
+      await loadBusinesses(pagination.value?.current_page || 1);
     } catch (error) {
       alert('Failed to delete business. Please try again.');
     }
@@ -233,9 +287,6 @@ const closeForm = () => {
 
 const handleSaved = async () => {
   closeForm();
-  await businessStore.fetchBusinesses({
-    search: searchQuery.value,
-    status: statusFilter.value,
-  });
+  await loadBusinesses(pagination.value?.current_page || 1);
 };
 </script>

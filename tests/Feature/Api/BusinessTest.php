@@ -105,3 +105,4 @@ it('validates required fields when creating a business', function () {
         ->assertJsonValidationErrors(['name']);
 });
 
+

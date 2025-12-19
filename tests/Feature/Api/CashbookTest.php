@@ -119,3 +119,4 @@ it('validates required fields when creating a cashbook', function () {
         ->assertJsonValidationErrors(['business_id', 'title']);
 });
 
+

@@ -35,3 +35,4 @@ class TransactionResource extends JsonResource
         ];
     }
 }
+

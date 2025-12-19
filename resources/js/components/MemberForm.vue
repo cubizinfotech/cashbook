@@ -134,6 +134,7 @@
                @update:model-value="updateLocation"
               :errors="errors"
               :touched="touched"
+              :prefetched-countries="prefetchedCountries"
             />
           </div>
 
@@ -206,7 +207,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch,computed } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { useMemberStore } from '../stores/member';
 import { useValidation } from '../composables/useValidation';
 import LocationSelect from './LocationSelect.vue';
@@ -217,6 +218,7 @@ import axios from 'axios';
 import { Ckeditor } from '@ckeditor/ckeditor5-vue';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { useBusinessStore } from '../stores/business';
+import { useUserStore } from '../stores/user';
 const businessStore = useBusinessStore();
 const editor = ClassicEditor;
 const editorConfig = {
@@ -239,25 +241,32 @@ const props = defineProps({
     type: [String, Number],
     required: true,
   },
-});
-onMounted(async () => {
-  await memberStore.fetchMembers();
-});
-const businessMember = computed(() => {
-  return memberStore.members.find((m) => m.business_id == props.businessId
-  ) || null;
+  createData: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['close', 'saved']);
 const memberStore = useMemberStore();
+const userStore = useUserStore();
 const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
 const loading = ref(false);
 const error = ref(null);
 const roles = ref([]);
+const prefetchedCountries = ref([]);
 const location = reactive({
   country_id: null,
   state_id: null,
   city_id: null,
+});
+
+const businessMember = computed(() => {
+  const currentBusiness = businessStore.currentBusiness;
+  if (!currentBusiness || !userStore.user) return null;
+  return currentBusiness.members?.find(
+    (m) => m.business_id == props.businessId && m.user_id === userStore.user.id
+  ) || null;
 });
 
 const genderOptions = [
@@ -293,17 +302,25 @@ const validationRules = {
   date_of_birth: ['date', 'not_future'], // <-- add this
 
 };
+const currentRoleName = computed(() => {
+  const memberRole = userStore.member?.businessRole?.name || userStore.member?.role?.name;
+  const businessRole = businessMember.value?.business_role?.name || businessMember.value?.businessRole?.name;
+  return (memberRole || businessRole || '').toLowerCase();
+});
+
 const filteredRoles = computed(() => {
   const all = Array.isArray(roles.value) ? roles.value : [];
-  const currentRoleId = form.business_role_id ? Number(form.business_role_id) : null;
-  let result = [];
-  if (currentRoleId === 1) {
-    result = all.slice();
-  } else if (currentRoleId === 2 || currentRoleId === 3) {
-    result = all.filter(r => Number(r.id) === 3);
-  } else {
-    result = all.slice();
+  const roleName = currentRoleName.value;
+  let result = all;
+
+  if (roleName === 'owner') {
+    result = all.filter(r => ['partner', 'staff'].includes((r.name || '').toLowerCase()));
+  } else if (roleName === 'partner') {
+    result = all.filter(r => (r.name || '').toLowerCase() === 'staff');
+  } else if (!roleName || roleName === 'creator') {
+    result = all;
   }
+
   const editingRoleId = props.member ? Number(props.member.business_role_id) : null;
   if (editingRoleId && !result.some(r => Number(r.id) === editingRoleId)) {
     const editingRole = all.find(r => Number(r.id) === editingRoleId);
@@ -311,18 +328,49 @@ const filteredRoles = computed(() => {
       result = [...result, editingRole];
     }
   }
+
   return result;
 });
 
+const ensureUserLoaded = async () => {
+  if (!userStore.user) {
+    await userStore.fetchCurrentUser();
+  }
+};
+
+const loadCreateMeta = async () => {
+  if (props.createData) {
+    roles.value = props.createData.roles || props.createData.business_roles || [];
+    prefetchedCountries.value = props.createData.countries || [];
+    return;
+  }
+  try {
+    const meta = await memberStore.fetchCreateData({ business_id: props.businessId });
+    roles.value = meta?.roles || meta?.business_roles || [];
+    prefetchedCountries.value = meta?.countries || [];
+  } catch (error) {
+    await loadRolesFallback();
+  }
+};
+
+const loadRolesFallback = async () => {
+  try {
+    const response = await axios.get('/api/business-roles');
+    roles.value = response.data.data || [];
+  } catch (error) {
+    console.error('Failed to load roles', error);
+  }
+};
+
 onMounted(async () => {
   clearErrors();
-  await loadRoles();
-  await memberStore.fetchMembers();
-    if (props.member) {
-        form.business_role_id = props.member.business_role_id;
-    }else if (businessMember.value) {
-        form.business_role_id = businessMember.value.business_role_id;
-    }
+  await ensureUserLoaded();
+  await loadCreateMeta();
+  if (props.member) {
+    form.business_role_id = props.member.business_role_id;
+  } else if (businessMember.value) {
+    form.business_role_id = businessMember.value.business_role_id;
+  }
   if (props.member) {
     Object.assign(form, {
       business_id: props.businessId,
@@ -357,28 +405,6 @@ watch(location, (newVal) => {
   form.state_id = newVal.state_id !== null ? newVal.state_id : '';
   form.city_id = newVal.city_id !== null ? newVal.city_id : '';
 }, { deep: true, immediate: true });
-const loadRoles = async () => {
-  try {
-    const response = await axios.get('/api/business-roles');
-    roles.value = response.data.data || [];
-  } catch (error) {
-    console.error('Failed to load roles', error);
-  }
-};
-const user = ref(null);
-onMounted(async () => {
-  try {
-    const response = await axios.get('/api/user');
-    user.value = response.data;
-  } catch (error) {
-    console.error('Failed to fetch user', error);
-  }
-});
-watch(location, (newVal) => {
-  form.country_id = newVal.country_id;
-  form.state_id = newVal.state_id;
-  form.city_id = newVal.city_id;
-}, { deep: true });
 
 const handleSubmit = async () => {
   clearErrors();

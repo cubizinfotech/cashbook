@@ -19,3 +19,4 @@ class BusinessRoleController extends Controller
         return BusinessRoleResource::collection($businessRoles);
     }
 }
+

@@ -66,22 +66,31 @@
         </div>
       </div>
       <!-- Members Section -->
-      <div class="card" >
+      <div v-if="!isStaff" class="card" >
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 class="text-lg font-semibold text-gray-900">Members <span class="text-sm font-semibold">({{ business.total_members }})</span></h2>
-
-          <button
-            @click="showMemberForm = true"
-            class="btn-primary text-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Add Member</span>
-          </button>
+          <div class="flex items-center space-x-3">
+            <select
+              v-model="memberStatusFilter"
+              class="input-field w-40"
+            >
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <button
+              @click="openMemberForm()"
+              class="btn-primary text-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Add Member</span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="business.members && business.members.length > 0 " class="divide-y divide-gray-200">
-          <div v-for="member in business.members" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
+        <div v-if="filteredMembers && filteredMembers.length > 0 " class="divide-y divide-gray-200">
+          <div v-for="member in filteredMembers" :key="member.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div class="flex justify-between items-center" >
               <div class="flex-1">
                 <p class="font-medium text-gray-900">{{ member.name }} <span class="text-sm font-semibold">({{ member.business_role.name }})</span></p>
@@ -91,13 +100,13 @@
                 <p v-if="member.phone" class="text-sm text-gray-500">{{ member.phone }}</p>
               </div>
               <div class="flex space-x-3">
-                <button v-if="!user?.member?.role?.name ||member.business_role_id === 1  || member.business_role_id === 2"
+                <button
                   @click="editMember(member)"
                   class="text-sky-600 hover:text-sky-800 text-sm font-medium transition-colors"
                 >
                   Edit
                 </button>
-                <button v-if="!user?.member?.role?.name ||member.business_role_id === 1"
+                <button
                   @click="confirmDeleteMember(member)"
                   class="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
@@ -119,19 +128,29 @@
       <div class="card">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h2 class="text-lg font-semibold text-gray-900">Cashbooks <span class="text-sm font-semibold">({{ business.total_cashbooks }})</span></h2>
-          <button
-            @click="showCashbookForm = true"
-            class="btn-primary text-sm"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Add Cashbook</span>
-          </button>
+          <div class="flex items-center space-x-3">
+            <select
+              v-model="cashbookStatusFilter"
+              class="input-field w-40"
+            >
+              <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <button
+              @click="showCashbookForm = true"
+              class="btn-primary text-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Add Cashbook</span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="business.cashbooks && business.cashbooks.length > 0" class="divide-y divide-gray-200">
-          <div v-for="cashbook in business.cashbooks" :key="cashbook.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
+        <div v-if="filteredCashbooks && filteredCashbooks.length > 0" class="divide-y divide-gray-200">
+          <div v-for="cashbook in filteredCashbooks" :key="cashbook.id" class="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div class="flex justify-between items-center">
               <div class="flex-1">
                 <p class="font-medium text-gray-900">{{ cashbook.title }}</p>
@@ -178,6 +197,7 @@
       v-if="showMemberForm"
       :member="editingMember"
       :business-id="business?.id"
+      :create-data="memberCreateData"
       @close="closeMemberForm"
       @saved="handleMemberSaved"
     />
@@ -199,6 +219,7 @@ import { useRouter } from 'vue-router';
 import { useBusinessStore } from '../stores/business';
 import { useMemberStore } from '../stores/member';
 import { useCashbookStore } from '../stores/cashbook';
+import { useUserStore } from '../stores/user';
 import MemberForm from '../components/MemberForm.vue';
 import CashbookForm from '../components/CashbookForm.vue';
 
@@ -208,34 +229,74 @@ const props = defineProps({
     required: true,
   },
 });
-const roles = ref([]);
-const loadRoles = async () => {
-  try {
-    const response = await axios.get('/api/business-roles');
-    roles.value = response.data.data || [];
-  } catch (error) {
-    console.error('Failed to load roles', error);
-  }
-};
 const router = useRouter();
 const businessStore = useBusinessStore();
 const memberStore = useMemberStore();
 const cashbookStore = useCashbookStore();
+const userStore = useUserStore();
 const showMemberForm = ref(false);
 const showCashbookForm = ref(false);
 const editingMember = ref(null);
 const editingCashbook = ref(null);
+const memberCreateData = ref(null);
+const memberStatusFilter = ref('');
+const cashbookStatusFilter = ref('');
+const statusOptions = [
+  { value: '', label: 'All Status' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'suspended', label: 'Suspended' },
+];
 const business = computed(() => businessStore.currentBusiness);
+
+const filteredMembers = computed(() => {
+  const list = business.value?.members || [];
+  if (!memberStatusFilter.value) return list;
+  return list.filter((m) => m.status === memberStatusFilter.value);
+});
+
+const filteredCashbooks = computed(() => {
+  const list = business.value?.cashbooks || [];
+  if (!cashbookStatusFilter.value) return list;
+  return list.filter((c) => c.status === cashbookStatusFilter.value);
+});
+
+const currentRoleName = computed(() => {
+  const role = userStore.member?.businessRole?.name || userStore.member?.role?.name;
+  return (role || '').toLowerCase();
+});
+
+const isStaff = computed(() => currentRoleName.value === 'staff');
+
+const ensureUserLoaded = async () => {
+  if (!userStore.user) {
+    await userStore.fetchCurrentUser();
+  }
+};
+
 onMounted(async () => {
-    console.log('id'.id);
+  await ensureUserLoaded();
   await businessStore.fetchBusiness(props.id);
 });
-const editMember = (member) => {
+
+const openMemberForm = async (member = null) => {
   editingMember.value = member;
+  memberCreateData.value = memberStore.createMeta;
+  if (!memberCreateData.value) {
+    try {
+      memberCreateData.value = await memberStore.fetchCreateData({ business_id: props.id });
+    } catch (error) {
+      memberCreateData.value = null;
+    }
+  }
   showMemberForm.value = true;
 };
 
-const user = ref(null);
+const editMember = (member) => {
+  openMemberForm(member);
+};
+
 const confirmDeleteMember = async (member) => {
   if (confirm(`Are you sure you want to delete "${member.name}"? This action cannot be undone.`)) {
     try {

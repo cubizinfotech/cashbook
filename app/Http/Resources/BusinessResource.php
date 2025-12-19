@@ -38,8 +38,9 @@ class BusinessResource extends JsonResource
             'created_at'    => Carbon::parse($this->created_at)->format('d M, Y h:i A'),
             'updated_at'    => Carbon::parse($this->updated_at)->format('d M, Y h:i A'),
             'business_role' => ucwords(auth()->id() == $this->created_by
-                                ? 'owner'
+                                ? 'creator'
                                 : optional(collect($this->members ?? [])->firstWhere('user_id', auth()->id()))->businessRole->name),
         ];
     }
 }
+

@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Member;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Mail\MemberRegistrationMail;
 use Illuminate\Support\Facades\Hash;

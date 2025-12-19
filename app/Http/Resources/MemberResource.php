@@ -39,3 +39,4 @@ class MemberResource extends JsonResource
         ];
     }
 }
+

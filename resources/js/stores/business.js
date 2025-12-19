@@ -5,6 +5,8 @@ export const useBusinessStore = defineStore('business', {
   state: () => ({
     businesses: [],
     currentBusiness: null,
+    pagination: null,
+    createMeta: null,
     loading: false,
     error: null,
   }),
@@ -16,6 +18,7 @@ export const useBusinessStore = defineStore('business', {
       try {
         const response = await axios.get('/api/businesses', { params });
         this.businesses = response.data.data;
+        this.pagination = response.data.meta || null;
         return response.data;
       } catch (error) {
         this.error = error.response?.data?.message || 'Failed to fetch businesses';
@@ -35,6 +38,21 @@ export const useBusinessStore = defineStore('business', {
         return response.data.data;
       } catch (error) {
         this.error = error.response?.data?.message || 'Failed to fetch business';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchCreateData() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await axios.get('/api/businesses/create');
+        this.createMeta = response.data?.data || response.data || null;
+        return this.createMeta;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to load business defaults';
         throw error;
       } finally {
         this.loading = false;

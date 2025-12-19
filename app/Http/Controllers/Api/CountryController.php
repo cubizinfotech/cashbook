@@ -19,3 +19,4 @@ class CountryController extends Controller
         return CountryResource::collection($countries);
     }
 }
+

@@ -36,3 +36,4 @@ class StoreTransactionRequest extends FormRequest
     }
 }
 
+

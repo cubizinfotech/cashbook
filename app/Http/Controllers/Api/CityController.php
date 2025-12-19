@@ -26,3 +26,4 @@ class CityController extends Controller
         return CityResource::collection($cities);
     }
 }
+

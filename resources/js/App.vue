@@ -104,11 +104,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from 'axios';
+import { useUserStore } from './stores/user';
 
 const route = useRoute();
 const sidebarOpen = ref(false);
-const user = ref(null);
+const userStore = useUserStore();
+const user = computed(() => userStore);
 
 const csrfToken = computed(() => {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -119,11 +120,8 @@ const isActive = (path) => {
 };
 
 onMounted(async () => {
-  try {
-    const response = await axios.get('/api/user');
-    user.value = response.data;
-  } catch (error) {
-    console.error('Failed to fetch user', error);
+  if (!userStore.user) {
+    await userStore.fetchCurrentUser();
   }
 });
 </script>

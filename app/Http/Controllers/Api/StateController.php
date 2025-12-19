@@ -26,3 +26,4 @@ class StateController extends Controller
         return StateResource::collection($states);
     }
 }
+

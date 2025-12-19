@@ -4,6 +4,7 @@ import axios from 'axios';
 export const useMemberStore = defineStore('member', {
   state: () => ({
     members: [],
+    createMeta: null,
     loading: false,
     error: null,
   }),
@@ -18,6 +19,21 @@ export const useMemberStore = defineStore('member', {
         return response.data;
       } catch (error) {
         this.error = error.response?.data?.message || 'Failed to fetch members';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchCreateData(params = {}) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await axios.get('/api/members/create', { params });
+        this.createMeta = response.data?.data || response.data || null;
+        return this.createMeta;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to load member defaults';
         throw error;
       } finally {
         this.loading = false;

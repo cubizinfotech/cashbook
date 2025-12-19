@@ -57,19 +57,27 @@
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-lg font-semibold text-gray-900">Cash In</h2>
-            <button
-              @click="openAddForm('in')"
-              class="btn-primary text-sm"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Add Transaction</span>
-            </button>
+            <div class="flex items-center space-x-3">
+              <select v-model="transactionStatusFilter" class="input-field w-40">
+                <option value="">All Status</option>
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <button
+                @click="openAddForm('in')"
+                class="btn-primary text-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Transaction</span>
+              </button>
+            </div>
           </div>
           <div class="p-6">
             <!-- Cash In Transactions Table -->
-            <div v-if="cashInTransactions.length > 0" class="overflow-x-auto">
+            <div v-if="filteredCashIn.length > 0" class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
@@ -84,7 +92,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="transaction in cashInTransactions" :key="transaction.id">
+                  <tr v-for="transaction in filteredCashIn" :key="transaction.id">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {{ formatDate(transaction.transaction_datetime) }}
                     </td>
@@ -143,19 +151,27 @@
         <div class="bg-white rounded-lg shadow">
           <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 class="text-lg font-semibold text-gray-900">Cash Out</h2>
-            <button
-              @click="openAddForm('out')"
-              class="btn-primary text-sm"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Add Transaction</span>
-            </button>
+            <div class="flex items-center space-x-3">
+              <select v-model="transactionStatusFilter" class="input-field w-40">
+                <option value="">All Status</option>
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <button
+                @click="openAddForm('out')"
+                class="btn-primary text-sm"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Transaction</span>
+              </button>
+            </div>
           </div>
           <div class="p-6">
             <!-- Cash Out Transactions Table -->
-            <div v-if="cashOutTransactions.length > 0" class="overflow-x-auto">
+            <div v-if="filteredCashOut.length > 0" class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
@@ -171,7 +187,7 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="transaction in cashOutTransactions" :key="transaction.id">
+                  <tr v-for="transaction in filteredCashOut" :key="transaction.id">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {{ formatDate(transaction.transaction_datetime) }}
                     </td>
@@ -539,6 +555,7 @@ const statusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'suspended', label: 'Suspended' },
 ];
+const transactionStatusFilter = ref('');
 
 // form state
 const form = reactive({
@@ -571,6 +588,16 @@ const cashInTransactions = computed(() => {
 
 const cashOutTransactions = computed(() => {
   return transactions.value.filter(t => t.type === 'out');
+});
+
+const filteredCashIn = computed(() => {
+  if (!transactionStatusFilter.value) return cashInTransactions.value;
+  return cashInTransactions.value.filter(t => t.status === transactionStatusFilter.value);
+});
+
+const filteredCashOut = computed(() => {
+  if (!transactionStatusFilter.value) return cashOutTransactions.value;
+  return cashOutTransactions.value.filter(t => t.status === transactionStatusFilter.value);
 });
 
 // ⭐ Load everything on mount

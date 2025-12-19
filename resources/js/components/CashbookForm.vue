@@ -76,6 +76,7 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useCashbookStore } from '../stores/cashbook';
 import { useMemberStore } from '../stores/member';
+import { useUserStore } from '../stores/user';
 import { useValidation } from '../composables/useValidation';
 import SearchableSelect from './SearchableSelect.vue';
 import { Ckeditor } from '@ckeditor/ckeditor5-vue'
@@ -107,6 +108,7 @@ const emit = defineEmits(['close', 'saved']);
 
 const cashbookStore = useCashbookStore();
 const memberStore = useMemberStore();
+const userStore = useUserStore();
 const { errors, touched, validateField, validateForm, clearErrors, setErrors } = useValidation();
 const loading = ref(false);
 const error = ref(null);
@@ -121,22 +123,18 @@ const members = computed(() => {
   }));
 });
 const filteredMembers = computed(() => {
-    if (!user.value) return members.value;
-    if (user.value?.member?.role?.id === 3) {
-        return members.value.filter(m => m.id === user.value.member.id);
+    if (!userStore.member) return members.value;
+    if (userStore.member?.role?.id === 3 || (userStore.member?.businessRole?.name || '').toLowerCase() === 'staff') {
+        return members.value.filter(m => m.id === userStore.member.id);
     }
     return members.value;
 });
 
-const user = ref(null);
-onMounted(async () => {
-  try {
-    const response = await axios.get('/api/user');
-    user.value = response.data;
-  } catch (error) {
-    console.error('Failed to fetch user', error);
+const ensureUserLoaded = async () => {
+  if (!userStore.user) {
+    await userStore.fetchCurrentUser();
   }
-});
+};
 
 const form = reactive({
     business_id: props.businessId,
@@ -152,6 +150,7 @@ const validationRules = {
 
 onMounted(async () => {
     clearErrors();
+    await ensureUserLoaded();
     // Fetch members for the business
     await fetchBusinessMembers();
     console.log("MEMBERS RAW FROM API:", membersRaw.value);
